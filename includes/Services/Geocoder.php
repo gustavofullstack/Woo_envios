@@ -5,8 +5,6 @@
  * @package Woo_Envios
  */
 
-declare(strict_types=1);
-
 namespace Woo_Envios\Services;
 
 if ( ! defined( 'ABSPATH' ) ) {

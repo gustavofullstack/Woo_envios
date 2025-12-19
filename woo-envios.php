@@ -12,7 +12,6 @@
  */
 
 // GitHub Action Trigger: v3.1.x
-declare(strict_types=1);
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
