@@ -170,10 +170,9 @@ class Woo_Envios_Shipping_Method extends WC_Shipping_Method {
 			return null;
 		}
 
-		// EMERGENCY FIX: Removed signature check to ensure coordinates are accepted.
-		// if ( empty( $coords['signature'] ) || $coords['signature'] !== $signature ) {
-		// 	return null;
-		// }
+		if ( empty( $coords['signature'] ) || $coords['signature'] !== $signature ) {
+			return null;
+		}
 
 		return array(
 			'lat' => (float) $coords['lat'],

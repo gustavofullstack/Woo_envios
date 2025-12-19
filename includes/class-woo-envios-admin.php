@@ -147,7 +147,7 @@ final class Woo_Envios_Admin {
 		}
 
 		global $wpdb;
-		$table_name = $wpdb->prefix . 'woo_envios_google_cache';
+		$table_name = $wpdb->prefix . 'woo_envios_geocode_cache';
 		
 		// Check if table exists
 		if ( $wpdb->get_var( $wpdb->prepare( "SHOW TABLES LIKE %s", $table_name ) ) === $table_name ) {

@@ -160,7 +160,7 @@ final class Woo_Envios_Plugin {
 	private function create_google_cache_table(): void {
 		global $wpdb;
 
-		$table_name      = $wpdb->prefix . 'woo_envios_google_cache';
+		$table_name      = $wpdb->prefix . 'woo_envios_geocode_cache';
 		$charset_collate = $wpdb->get_charset_collate();
 
 		$sql = "CREATE TABLE IF NOT EXISTS $table_name (
