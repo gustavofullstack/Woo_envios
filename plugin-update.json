@@ -1,0 +1,21 @@
+{
+    "name": "Woo Envios ⚡ Raio Escalonado + Google Maps",
+    "slug": "woo-envios",
+    "version": "3.1.0",
+    "download_url": "https://github.com/gustavofullstack/Woo_envios/releases/download/v3.1.0/woo-envios-3.1.0.zip",
+    "requires": "6.2",
+    "tested": "6.5",
+    "requires_php": "7.4",
+    "author": "GUSTAVO_EDC",
+    "author_profile": "https://github.com/gustavofullstack",
+    "last_updated": "2025-12-19 10:00:00",
+    "sections": {
+        "description": "Plugin para WooCommerce que calcula frete baseado na distância real entre a loja e o cliente. <br>Agora com atualizações automáticas direto do GitHub! 🚀",
+        "changelog": "<h4>3.1.0</h4><ul><li>Implementado sistema de atualização automática via JSON.</li><li>Melhoria na detecção de coordenadas.</li></ul>",
+        "installation": "1. Faça upload da pasta `woo-envios` para `/wp-content/plugins/`\n2. Ative o plugin em WordPress → Plugins\n3. Configure em WooCommerce → Woo Envios"
+    },
+    "banners": {
+        "low": "https://raw.githubusercontent.com/gustavofullstack/Woo_envios/main/assets/banner-772x250.png",
+        "high": "https://raw.githubusercontent.com/gustavofullstack/Woo_envios/main/assets/banner-1544x500.png"
+    }
+}
