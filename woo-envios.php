@@ -78,7 +78,7 @@ final class Woo_Envios_Plugin {
 		require_once WOO_ENVIOS_PATH . 'includes/class-woo-envios-logger.php';
 		require_once WOO_ENVIOS_PATH . 'includes/class-woo-envios-admin.php';
 		require_once WOO_ENVIOS_PATH . 'includes/class-woo-envios-checkout.php';
-		require_once WOO_ENVIOS_PATH . 'includes/class-woo-envios-shipping.php';
+
 	}
 
 	/**
@@ -101,6 +101,16 @@ final class Woo_Envios_Plugin {
 		$this->init_updater();
 
 		add_filter( 'woocommerce_shipping_methods', array( $this, 'register_shipping_method' ) );
+
+		// Load shipping class after WooCommerce is ready
+		add_action( 'woocommerce_shipping_init', array( $this, 'load_shipping_class' ) );
+	}
+
+	/**
+	 * Load shipping class when WooCommerce is ready.
+	 */
+	public function load_shipping_class(): void {
+		require_once WOO_ENVIOS_PATH . 'includes/class-woo-envios-shipping.php';
 	}
 
 	/**
