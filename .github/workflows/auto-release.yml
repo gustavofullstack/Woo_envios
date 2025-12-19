@@ -35,7 +35,9 @@ jobs:
         # Separar versão X.Y.Z
         IFS='.' read -r major minor patch <<< "$CURRENT_VERSION"
         NEW_VERSION="$major.$minor.$((patch + 1))"
+        # Exportar para ENV (scripts subsequentes) e OUTPUT (steps subsequentes)
         echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+        echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_OUTPUT
         
         # Atualizar arquivos PHP
         sed -i "s/Version: $CURRENT_VERSION/Version: $NEW_VERSION/" woo-envios.php
@@ -80,9 +82,9 @@ jobs:
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
-        tag_name: "v${{ env.NEW_VERSION }}"
-        name: "Release v${{ env.NEW_VERSION }}"
+        tag_name: "v${{ steps.bump_version.outputs.NEW_VERSION }}"
+        name: "Release v${{ steps.bump_version.outputs.NEW_VERSION }}"
         body: "Auto-generated release from commit ${{ github.sha }}"
-        files: "woo-envios-${{ env.NEW_VERSION }}.zip"
+        files: "woo-envios-${{ steps.bump_version.outputs.NEW_VERSION }}.zip"
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
