@@ -68,13 +68,19 @@ final class Woo_Envios_Plugin {
 
 	/**
 	 * Inclui classes auxiliares.
+	 * IMPORTANT: Order matters! Load dependencies before classes that use them.
 	 */
 	private function include_files(): void {
-		require_once WOO_ENVIOS_PATH . 'includes/Services/Geocoder.php';
+		// Load core dependencies first (no dependencies on other plugin classes)
+		require_once WOO_ENVIOS_PATH . 'includes/class-woo-envios-logger.php';
 		require_once WOO_ENVIOS_PATH . 'includes/class-woo-envios-google-maps.php';
+		
+		// Load Geocoder AFTER Google Maps (Geocoder depends on Woo_Envios_Google_Maps)
+		require_once WOO_ENVIOS_PATH . 'includes/Services/Geocoder.php';
+		
+		// Load remaining classes (some depend on Geocoder)
 		require_once WOO_ENVIOS_PATH . 'includes/class-woo-envios-google-maps-admin.php';
 		require_once WOO_ENVIOS_PATH . 'includes/class-woo-envios-weather.php';
-		require_once WOO_ENVIOS_PATH . 'includes/class-woo-envios-logger.php';
 		require_once WOO_ENVIOS_PATH . 'includes/class-woo-envios-admin.php';
 		require_once WOO_ENVIOS_PATH . 'includes/class-woo-envios-checkout.php';
 
