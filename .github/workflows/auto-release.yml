@@ -33,13 +33,13 @@ jobs:
       id: bump_version
       run: |
         # Separar versão X.Y.Z
-        IFS='.' read -r major minor patch <<< "${{ env.CURRENT_VERSION }}"
+        IFS='.' read -r major minor patch <<< "$CURRENT_VERSION"
         NEW_VERSION="$major.$minor.$((patch + 1))"
         echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
         
         # Atualizar arquivos
-        sed -i "s/Version: ${{ env.CURRENT_VERSION }}/Version: $NEW_VERSION/" woo-envios.php
-        sed -i "s/VERSION = '${{ env.CURRENT_VERSION }}'/VERSION = '$NEW_VERSION'/" woo-envios.php
+        sed -i "s/Version: $CURRENT_VERSION/Version: $NEW_VERSION/" woo-envios.php
+        sed -i "s/VERSION = '$CURRENT_VERSION'/VERSION = '$NEW_VERSION'/" woo-envios.php
         
         # Output para o job
         echo "Created new version: $NEW_VERSION"
@@ -49,7 +49,7 @@ jobs:
         git config --global user.name 'github-actions[bot]'
         git config --global user.email 'github-actions[bot]@users.noreply.github.com'
         git add woo-envios.php
-        git commit -m "chore: bump version to ${{ env.NEW_VERSION }}"
+        git commit -m "chore: bump version to $NEW_VERSION"
         git push origin main
 
     - name: Create ZIP artifact
@@ -57,14 +57,14 @@ jobs:
         # Criar pasta temporária para zipar limpo (sem arquivos ocultos/git)
         mkdir woo-envios
         rsync -av --progress . woo-envios --exclude .git --exclude .github --exclude woo-envios --exclude .gitignore
-        zip -r "woo-envios-${{ env.NEW_VERSION }}.zip" woo-envios
+        zip -r "woo-envios-$NEW_VERSION.zip" woo-envios
 
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
-        tag_name: "v${{ env.NEW_VERSION }}"
-        name: "Release v${{ env.NEW_VERSION }}"
+        tag_name: "v$NEW_VERSION"
+        name: "Release v$NEW_VERSION"
         body: "Auto-generated release from commit ${{ github.sha }}"
-        files: "woo-envios-${{ env.NEW_VERSION }}.zip"
+        files: "woo-envios-$NEW_VERSION.zip"
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
