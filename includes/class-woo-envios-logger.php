@@ -148,7 +148,7 @@ class Woo_Envios_Logger {
 		wp_mail( $admin_email, $subject, $message );
 
 		// Set transient to avoid spam (1 hour).
-		set_transient( 'woo_envios_last_failure_notification', time(), HOUR_IN_SECONDS );
+		set_transient( 'woo_envios_last_failure_notification', time(), 3600 ); // 1 hour
 	}
 
 	/**
@@ -172,7 +172,7 @@ class Woo_Envios_Logger {
 		foreach ( $files as $file ) {
 			if ( is_file( $file ) ) {
 				// Delete files older than 7 days.
-				if ( $now - filemtime( $file ) >= 7 * DAY_IN_SECONDS ) {
+				if ( $now - filemtime( $file ) >= 7 * 86400 ) { // 7 days in seconds
 					unlink( $file );
 				}
 			}

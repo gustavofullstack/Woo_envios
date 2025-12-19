@@ -67,7 +67,8 @@ class Woo_Envios_Google_Maps {
 	 */
 	public function __construct() {
 		$this->api_key   = get_option( self::API_KEY_OPTION, '' );
-		$this->cache_ttl = (int) get_option( 'udi_google_maps_cache_ttl', 30 * DAY_IN_SECONDS );
+		// Use numeric value (30 days in seconds) since DAY_IN_SECONDS may not be defined yet
+		$this->cache_ttl = (int) get_option( 'udi_google_maps_cache_ttl', 30 * 86400 );
 	}
 
 	/**
@@ -126,7 +127,7 @@ class Woo_Envios_Google_Maps {
 	private function record_failure() {
 		$failures = get_transient( 'woo_envios_api_failures' ) ?: 0;
 		$failures++;
-		set_transient( 'woo_envios_api_failures', $failures, HOUR_IN_SECONDS );
+		set_transient( 'woo_envios_api_failures', $failures, 3600 ); // 1 hour
 	
 		if ( $failures >= self::MAX_CONSECUTIVE_FAILURES ) {
 			error_log( sprintf( 'Woo Envios: Circuit breaker opened after %d failures', $failures ) );
@@ -464,7 +465,7 @@ class Woo_Envios_Google_Maps {
 			'duration_value' => $element['duration']['value'], // In seconds.
 		);
 
-		$this->cache_result( $cache_key, $output, 7 * DAY_IN_SECONDS ); // Cache for 7 days.
+		$this->cache_result( $cache_key, $output, 604800 ); // Cache for 7 days (7 * 86400)
 
 		return $output;
 	}

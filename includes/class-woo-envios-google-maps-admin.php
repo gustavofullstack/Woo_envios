@@ -159,7 +159,7 @@ class Woo_Envios_Google_Maps_Admin {
 
 		// Save additional settings.
 		$cache_ttl = ! empty( $_POST['cache_ttl'] ) ? absint( $_POST['cache_ttl'] ) : 30;
-		update_option( 'udi_google_maps_cache_ttl', $cache_ttl * DAY_IN_SECONDS );
+		update_option( 'udi_google_maps_cache_ttl', $cache_ttl * 86400 ); // days to seconds
 
 		$autocomplete_enabled = ! empty( $_POST['autocomplete_enabled'] );
 		update_option( 'udi_google_maps_autocomplete_enabled', $autocomplete_enabled );

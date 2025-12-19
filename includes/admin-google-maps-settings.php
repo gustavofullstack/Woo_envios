@@ -263,7 +263,7 @@ $usage_stats = $this->get_usage_stats();
 							<label for="udi_cache_ttl_main"><?php esc_html_e( 'Cache (dias)', 'woo-envios' ); ?></label>
 						</th>
 						<td>
-							<input type="number" id="udi_cache_ttl_main" name="cache_ttl" value="<?php echo esc_attr( get_option( 'udi_google_maps_cache_ttl', 30 * DAY_IN_SECONDS ) / DAY_IN_SECONDS ); ?>" min="1" max="365" class="small-text">
+							<input type="number" id="udi_cache_ttl_main" name="cache_ttl" value="<?php echo esc_attr( get_option( 'udi_google_maps_cache_ttl', 30 * 86400 ) / 86400 ); ?>" min="1" max="365" class="small-text">
 						</td>
 					</tr>
 					<tr>

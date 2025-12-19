@@ -19,9 +19,9 @@ class Woo_Envios_Weather {
 	private const API_URL = 'https://api.openweathermap.org/data/2.5/weather';
 
 	/**
-	 * Cache duration (1 hour).
+	 * Cache duration (1 hour = 3600 seconds).
 	 */
-	private const CACHE_DURATION = HOUR_IN_SECONDS;
+	private const CACHE_DURATION = 3600;
 
 	/**
 	 * Get current weather multiplier based on rain conditions.
