@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Woo Envios — Raio Escalonado + Google Maps
  * Description: Automatiza a coleta de coordenadas no checkout (CEP brasileiro) para integrar regras de frete por raio no WooCommerce. Agora com Google Maps API para máxima precisão!
- * Version: 3.1.8
+ * Version: 3.1.9
  * Author: GUSTAVO_EDC
  * Requires at least: 6.2
  * Requires PHP: 7.4
