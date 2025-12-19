@@ -801,160 +801,36 @@ final class Woo_Envios_Admin {
 	 */
 	private static function get_default_tiers(): array {
 		return array(
-			// Tarifa mínima - Cobre custo base do entregador (R$ 7,90)
-			array(
-				'label'    => __( 'Raio 1.0 km', 'woo-envios' ),
-				'distance' => 1,
-				'price'    => 7.90,
-			),
-			array(
-				'label'    => __( 'Raio 2.0 km', 'woo-envios' ),
-				'distance' => 2,
-				'price'    => 7.90,
-			),
-			array(
-				'label'    => __( 'Raio 3.0 km', 'woo-envios' ),
-				'distance' => 3,
-				'price'    => 7.90,
-			),
-			// Zona quente - +R$ 1,00/km
-			array(
-				'label'    => __( 'Raio 4.0 km', 'woo-envios' ),
-				'distance' => 4,
-				'price'    => 8.90,
-			),
-			array(
-				'label'    => __( 'Raio 5.0 km', 'woo-envios' ),
-				'distance' => 5,
-				'price'    => 9.90,
-			),
-			array(
-				'label'    => __( 'Raio 6.0 km', 'woo-envios' ),
-				'distance' => 6,
-				'price'    => 10.90,
-			),
-			// Curva 1: +R$ 0,60/km (desacelera o aumento)
-			array(
-				'label'    => __( 'Raio 7.0 km', 'woo-envios' ),
-				'distance' => 7,
-				'price'    => 11.50,
-			),
-			array(
-				'label'    => __( 'Raio 8.0 km', 'woo-envios' ),
-				'distance' => 8,
-				'price'    => 12.10,
-			),
-			array(
-				'label'    => __( 'Raio 9.0 km', 'woo-envios' ),
-				'distance' => 9,
-				'price'    => 12.70,
-			),
-			array(
-				'label'    => __( 'Raio 10.0 km', 'woo-envios' ),
-				'distance' => 10,
-				'price'    => 13.30,
-			),
-			array(
-				'label'    => __( 'Raio 11.0 km', 'woo-envios' ),
-				'distance' => 11,
-				'price'    => 13.90,
-			),
-			array(
-				'label'    => __( 'Raio 12.0 km', 'woo-envios' ),
-				'distance' => 12,
-				'price'    => 14.50,
-			),
-			// Curva 2: +R$ 0,50/km (distâncias longas mais atrativas)
-			array(
-				'label'    => __( 'Raio 13.0 km', 'woo-envios' ),
-				'distance' => 13,
-				'price'    => 15.00,
-			),
-			array(
-				'label'    => __( 'Raio 14.0 km', 'woo-envios' ),
-				'distance' => 14,
-				'price'    => 15.50,
-			),
-			array(
-				'label'    => __( 'Raio 15.0 km', 'woo-envios' ),
-				'distance' => 15,
-				'price'    => 16.00,
-			),
-			array(
-				'label'    => __( 'Raio 16.0 km', 'woo-envios' ),
-				'distance' => 16,
-				'price'    => 16.50,
-			),
-			array(
-				'label'    => __( 'Raio 17.0 km', 'woo-envios' ),
-				'distance' => 17,
-				'price'    => 17.00,
-			),
-			array(
-				'label'    => __( 'Raio 18.0 km', 'woo-envios' ),
-				'distance' => 18,
-				'price'    => 17.50,
-			),
-			array(
-				'label'    => __( 'Raio 19.0 km', 'woo-envios' ),
-				'distance' => 19,
-				'price'    => 18.00,
-			),
-			array(
-				'label'    => __( 'Raio 20.0 km', 'woo-envios' ),
-				'distance' => 20,
-				'price'    => 18.50,
-			),
-			array(
-				'label'    => __( 'Raio 21.0 km', 'woo-envios' ),
-				'distance' => 21,
-				'price'    => 19.00,
-			),
-			array(
-				'label'    => __( 'Raio 22.0 km', 'woo-envios' ),
-				'distance' => 22,
-				'price'    => 19.50,
-			),
-			array(
-				'label'    => __( 'Raio 23.0 km', 'woo-envios' ),
-				'distance' => 23,
-				'price'    => 20.00,
-			),
-			array(
-				'label'    => __( 'Raio 24.0 km', 'woo-envios' ),
-				'distance' => 24,
-				'price'    => 20.50,
-			),
-			array(
-				'label'    => __( 'Raio 25.0 km', 'woo-envios' ),
-				'distance' => 25,
-				'price'    => 21.00,
-			),
-			array(
-				'label'    => __( 'Raio 26.0 km', 'woo-envios' ),
-				'distance' => 26,
-				'price'    => 21.50,
-			),
-			array(
-				'label'    => __( 'Raio 27.0 km', 'woo-envios' ),
-				'distance' => 27,
-				'price'    => 22.00,
-			),
-			array(
-				'label'    => __( 'Raio 28.0 km', 'woo-envios' ),
-				'distance' => 28,
-				'price'    => 22.50,
-			),
-			array(
-				'label'    => __( 'Raio 29.0 km', 'woo-envios' ),
-				'distance' => 29,
-				'price'    => 23.00,
-			),
-			array(
-				'label'    => __( 'Raio 30.0 km', 'woo-envios' ),
-				'distance' => 30,
-				'price'    => 23.50,
-			),
+			array( 'label' => 'Raio 1.0 km', 'distance' => 1, 'price' => 7.50 ),
+			array( 'label' => 'Raio 2.0 km', 'distance' => 2, 'price' => 8.00 ),
+			array( 'label' => 'Raio 3.0 km', 'distance' => 3, 'price' => 8.50 ),
+			array( 'label' => 'Raio 4.0 km', 'distance' => 4, 'price' => 9.00 ),
+			array( 'label' => 'Raio 5.0 km', 'distance' => 5, 'price' => 9.50 ),
+			array( 'label' => 'Raio 6.0 km', 'distance' => 6, 'price' => 10.00 ),
+			array( 'label' => 'Raio 7.0 km', 'distance' => 7, 'price' => 10.90 ),
+			array( 'label' => 'Raio 8.0 km', 'distance' => 8, 'price' => 11.80 ),
+			array( 'label' => 'Raio 9.0 km', 'distance' => 9, 'price' => 12.70 ),
+			array( 'label' => 'Raio 10.0 km', 'distance' => 10, 'price' => 13.60 ),
+			array( 'label' => 'Raio 11.0 km', 'distance' => 11, 'price' => 14.50 ),
+			array( 'label' => 'Raio 12.0 km', 'distance' => 12, 'price' => 15.00 ),
+			array( 'label' => 'Raio 13.0 km', 'distance' => 13, 'price' => 15.50 ),
+			array( 'label' => 'Raio 14.0 km', 'distance' => 14, 'price' => 16.00 ),
+			array( 'label' => 'Raio 15.0 km', 'distance' => 15, 'price' => 16.50 ),
+			array( 'label' => 'Raio 16.0 km', 'distance' => 16, 'price' => 17.00 ),
+			array( 'label' => 'Raio 17.0 km', 'distance' => 17, 'price' => 17.50 ),
+			array( 'label' => 'Raio 18.0 km', 'distance' => 18, 'price' => 18.00 ),
+			array( 'label' => 'Raio 19.0 km', 'distance' => 19, 'price' => 18.50 ),
+			array( 'label' => 'Raio 20.0 km', 'distance' => 20, 'price' => 19.00 ),
+			array( 'label' => 'Raio 21.0 km', 'distance' => 21, 'price' => 19.50 ),
+			array( 'label' => 'Raio 22.0 km', 'distance' => 22, 'price' => 20.00 ),
+			array( 'label' => 'Raio 23.0 km', 'distance' => 23, 'price' => 20.50 ),
+			array( 'label' => 'Raio 24.0 km', 'distance' => 24, 'price' => 21.00 ),
+			array( 'label' => 'Raio 25.0 km', 'distance' => 25, 'price' => 21.50 ),
+			array( 'label' => 'Raio 26.0 km', 'distance' => 26, 'price' => 22.00 ),
+			array( 'label' => 'Raio 27.0 km', 'distance' => 27, 'price' => 22.50 ),
+			array( 'label' => 'Raio 28.0 km', 'distance' => 28, 'price' => 23.00 ),
+			array( 'label' => 'Raio 29.0 km', 'distance' => 29, 'price' => 23.50 ),
+			array( 'label' => 'Raio 30.0 km', 'distance' => 30, 'price' => 24.00 ),
 		);
 	}
 }
