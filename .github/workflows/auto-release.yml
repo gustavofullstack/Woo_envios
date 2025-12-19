@@ -80,9 +80,9 @@ jobs:
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
-        tag_name: "v$NEW_VERSION"
-        name: "Release v$NEW_VERSION"
+        tag_name: "v${{ env.NEW_VERSION }}"
+        name: "Release v${{ env.NEW_VERSION }}"
         body: "Auto-generated release from commit ${{ github.sha }}"
-        files: "woo-envios-$NEW_VERSION.zip"
+        files: "woo-envios-${{ env.NEW_VERSION }}.zip"
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
