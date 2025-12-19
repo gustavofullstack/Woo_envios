@@ -11,10 +11,5 @@
             "name": "Gustavo Almeida",
             "email": "alemida.me@icloud.com"
         }
-    ],
-    "autoload": {
-        "files": [
-            "includes/Services/Geocoder.php"
-        ]
-    }
+    ]
 }
