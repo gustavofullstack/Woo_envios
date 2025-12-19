@@ -97,7 +97,24 @@ final class Woo_Envios_Plugin {
 		
 		new Woo_Envios_Checkout();
 
+		$this->init_updater();
+
 		add_filter( 'woocommerce_shipping_methods', array( $this, 'register_shipping_method' ) );
+	}
+
+	/**
+	 * Initialize GitHub Updater.
+	 */
+	private function init_updater(): void {
+		if ( ! class_exists( 'Woo_Envios_Updater' ) ) {
+			return;
+		}
+
+		new Woo_Envios_Updater(
+			__FILE__,
+			'gustavofullstack',
+			'Woo_envios'
+		);
 	}
 
 	/**
