@@ -1,0 +1,81 @@
+.woo-envios-wrap {
+	max-width: 960px;
+}
+
+.woo-envios-card {
+	background: #fff;
+	padding: 24px;
+	margin-bottom: 24px;
+	border: 1px solid #e2e2e2;
+	border-radius: 6px;
+}
+
+.woo-envios-field {
+	display: flex;
+	flex-direction: column;
+	margin-bottom: 16px;
+}
+
+.woo-envios-field span {
+	font-weight: 600;
+	margin-bottom: 4px;
+}
+
+#woo-envios-admin-map {
+	height: 320px;
+	border: 1px solid #dcdcdc;
+	margin: 12px 0;
+}
+
+.woo-envios-search {
+	margin: 12px 0 20px;
+}
+
+.woo-envios-search-controls {
+	display: flex;
+	gap: 8px;
+	margin: 6px 0;
+}
+
+.woo-envios-search-controls input {
+	flex: 1;
+}
+
+#woo-envios-search-results {
+	list-style: none;
+	padding: 0;
+	margin: 10px 0 0;
+	border: 1px solid #ececec;
+	max-height: 180px;
+	overflow-y: auto;
+}
+
+#woo-envios-search-results li {
+	padding: 8px 10px;
+	border-bottom: 1px solid #f2f2f2;
+	cursor: pointer;
+}
+
+#woo-envios-search-results li:hover {
+	background: #f5f5f5;
+}
+
+#woo-envios-search-results li.woo-envios-result-message {
+	cursor: default;
+	background: none;
+}
+
+.woo-envios-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+	gap: 16px;
+}
+
+.woo-envios-tiers input {
+	width: 100%;
+}
+
+.woo-envios-tiers td,
+.woo-envios-tiers th {
+	text-align: left;
+}

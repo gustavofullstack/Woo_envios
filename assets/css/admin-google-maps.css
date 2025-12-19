@@ -1,0 +1,455 @@
+/**
+ * Google Maps Admin Styles
+ *
+ * @package UDI_Custom_Login
+ */
+
+/* === MAIN CONTAINER === */
+.udi-google-maps-admin {
+	max-width: 1200px;
+	margin: 20px 0;
+}
+
+/* === WIZARD STYLES === */
+.udi-gm-wizard {
+	background: #fff;
+	border: 1px solid #ccd0d4;
+	border-radius: 8px;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+	margin-top: 20px;
+}
+
+.udi-gm-wizard-header {
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	color: #fff;
+	padding: 30px;
+	border-radius: 8px 8px 0 0;
+	text-align: center;
+}
+
+.udi-gm-wizard-header h2 {
+	color: #fff;
+	margin: 0 0 10px 0;
+	font-size: 24px;
+}
+
+.udi-gm-wizard-header p {
+	margin: 0;
+	opacity: 0.9;
+}
+
+/* Progress Bar */
+.udi-gm-wizard-progress {
+	margin-top: 25px;
+}
+
+.udi-gm-wizard-progress-bar {
+	background: rgba(255, 255, 255, 0.3);
+	height: 8px;
+	border-radius: 4px;
+	overflow: hidden;
+	margin-bottom: 15px;
+}
+
+.udi-gm-wizard-progress-fill {
+	background: #00e676;
+	height: 100%;
+	transition: width 0.3s ease;
+}
+
+.udi-gm-wizard-steps {
+	display: flex;
+	justify-content: space-around;
+	max-width: 300px;
+	margin: 0 auto;
+}
+
+.udi-gm-wizard-steps span {
+	width: 36px;
+	height: 36px;
+	border-radius: 50%;
+	background: rgba(255, 255, 255, 0.3);
+	color: #fff;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-weight: bold;
+	transition: all 0.3s ease;
+}
+
+.udi-gm-wizard-steps span.active {
+	background: #00e676;
+	transform: scale(1.1);
+}
+
+.udi-gm-wizard-steps span.completed {
+	background: #00c853;
+}
+
+/* Wizard Steps */
+.udi-gm-wizard-step {
+	display: none;
+	padding: 40px;
+}
+
+.udi-gm-wizard-step.active {
+	display: block;
+	animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+		transform: translateY(10px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+.udi-gm-wizard-content {
+	max-width: 700px;
+	margin: 0 auto;
+}
+
+.udi-gm-wizard-icon {
+	font-size: 48px;
+	width: 80px;
+	height: 80px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	color: #fff;
+	border-radius: 50%;
+	margin: 0 auto 20px;
+}
+
+.udi-gm-wizard-content h3 {
+	text-align: center;
+	font-size: 22px;
+	margin-bottom: 15px;
+}
+
+.udi-gm-wizard-content > p {
+	text-align: center;
+	font-size: 15px;
+	color: #666;
+	margin-bottom: 30px;
+}
+
+/* Benefits List */
+.udi-gm-benefits {
+	list-style: none;
+	padding: 0;
+	margin: 30px 0;
+}
+
+.udi-gm-benefits li {
+	padding: 12px 0;
+	display: flex;
+	align-items: center;
+	font-size: 15px;
+}
+
+.udi-gm-benefits .dashicons {
+	color: #00c853;
+	margin-right: 10px;
+	font-size: 20px;
+}
+
+/* Instructions */
+.udi-gm-instructions {
+	background: #f9fafb;
+	padding: 20px 20px 20px 40px;
+	border-left: 4px solid #667eea;
+	margin: 20px 0;
+	line-height: 1.8;
+}
+
+.udi-gm-instructions li {
+	margin-bottom: 10px;
+}
+
+.udi-gm-instructions .button {
+	margin: 0 8px;
+	vertical-align: middle;
+}
+
+/* API Checklist */
+.udi-gm-api-checklist {
+	margin: 30px 0;
+}
+
+.udi-gm-api-item {
+	background: #f9fafb;
+	padding: 15px;
+	margin-bottom: 12px;
+	border-radius: 6px;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.udi-gm-api-item input[type="checkbox"] {
+	margin: 0;
+}
+
+.udi-gm-api-item label {
+	flex: 1;
+	margin: 0;
+}
+
+.udi-gm-api-item strong {
+	display: block;
+	margin-bottom: 4px;
+}
+
+/* Notes */
+.udi-gm-note {
+	background: #e3f2fd;
+	border-left: 4px solid #2196f3;
+	padding: 15px;
+	margin: 20px 0;
+	display: flex;
+	gap: 12px;
+}
+
+.udi-gm-note.udi-gm-warning {
+	background: #fff3e0;
+	border-left-color: #ff9800;
+}
+
+.udi-gm-note .dashicons {
+	color: #2196f3;
+	flex-shrink: 0;
+	margin-top: 2px;
+}
+
+.udi-gm-note.udi-gm-warning .dashicons {
+	color: #ff9800;
+}
+
+.udi-gm-note p {
+	margin: 0;
+}
+
+/* Wizard Actions */
+.udi-gm-wizard-actions {
+	margin-top: 40px;
+	display: flex;
+	justify-content: space-between;
+	gap: 15px;
+}
+
+/* === SETTINGS PAGE === */
+.udi-gm-status-card {
+	background: #fff;
+	border: 1px solid #ccd0d4;
+	border-radius: 8px;
+	padding: 24px;
+	margin: 20px 0;
+	display: flex;
+	align-items: center;
+	gap: 20px;
+}
+
+.udi-gm-status-card.connected {
+	border-left: 4px solid #00c853;
+	background: #f1f8f4;
+}
+
+.udi-gm-status-card.disconnected {
+	border-left: 4px solid #ff5252;
+	background: #fef5f5;
+}
+
+.udi-gm-status-icon {
+	font-size: 48px;
+	width: 60px;
+	height: 60px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 50%;
+}
+
+.udi-gm-status-card.connected .udi-gm-status-icon {
+	background: #00c853;
+	color: #fff;
+}
+
+.udi-gm-status-card.disconnected .udi-gm-status-icon {
+	background: #ff5252;
+	color: #fff;
+}
+
+.udi-gm-status-content h3 {
+	margin: 0 0 8px 0;
+}
+
+.udi-gm-status-content p {
+	margin: 0;
+	color: #666;
+}
+
+/* Settings Form */
+.udi-gm-settings {
+	background: #fff;
+	border: 1px solid #ccd0d4;
+	border-radius: 8px;
+	padding: 30px;
+	margin-top: 20px;
+}
+
+.udi-gm-config-form .form-table th {
+	width: 200px;
+}
+
+.udi-gm-config-form .required {
+	color: #d63638;
+}
+
+/* Test Section */
+.udi-gm-test-section {
+	background: #f9fafb;
+	padding: 20px;
+	border-radius: 6px;
+	margin: 20px 0;
+}
+
+.udi-gm-test-result {
+	margin-top: 15px;
+	padding: 15px;
+	border-radius: 6px;
+	display: none;
+}
+
+.udi-gm-test-result.show {
+	display: block;
+}
+
+.udi-gm-test-result.success {
+	background: #d4edda;
+	border: 1px solid #c3e6cb;
+	color: #155724;
+}
+
+.udi-gm-test-result.error {
+	background: #f8d7da;
+	border: 1px solid #f5c6cb;
+	color: #721c24;
+}
+
+.udi-gm-test-result h4 {
+	margin: 0 0 10px 0;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.udi-gm-test-result ul {
+	margin: 10px 0 0 0;
+	padding-left: 20px;
+}
+
+.udi-gm-test-result li {
+	margin: 5px 0;
+}
+
+.udi-gm-test-result .dashicons-yes {
+	color: #00c853;
+}
+
+.udi-gm-test-result .dashicons-no {
+	color: #d63638;
+}
+
+/* Stats Section */
+.udi-gm-stats-section {
+	margin-top: 40px;
+	padding-top: 30px;
+	border-top: 1px solid #ddd;
+}
+
+.udi-gm-stats-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+	gap: 20px;
+	margin: 20px 0;
+}
+
+.udi-gm-stat-card {
+	background: #fff;
+	border: 1px solid #ccd0d4;
+	border-radius: 8px;
+	padding: 20px;
+	text-align: center;
+	transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.udi-gm-stat-card:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.udi-gm-stat-card .dashicons {
+	font-size: 36px;
+	color: #667eea;
+	margin-bottom: 10px;
+}
+
+.udi-gm-stat-value {
+	font-size: 32px;
+	font-weight: bold;
+	color: #333;
+	margin: 10px 0;
+}
+
+.udi-gm-stat-label {
+	color: #666;
+	font-size: 14px;
+}
+
+.udi-gm-cache-actions {
+	margin-top: 20px;
+	display: flex;
+	gap: 10px;
+}
+
+/* Loading State */
+.udi-gm-loading {
+	opacity: 0.6;
+	pointer-events: none;
+}
+
+.udi-gm-loading .dashicons {
+	animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+/* Responsive */
+@media (max-width: 782px) {
+	.udi-gm-wizard-step {
+		padding: 20px;
+	}
+
+	.udi-gm-status-card {
+		flex-direction: column;
+		text-align: center;
+	}
+
+	.udi-gm-wizard-actions {
+		flex-direction: column;
+	}
+
+	.udi-gm-cache-actions {
+		flex-direction: column;
+	}
+}
