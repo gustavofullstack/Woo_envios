@@ -32,9 +32,6 @@ class Geocoder {
 		$google_maps = new \Woo_Envios_Google_Maps();
 
 		if ( ! $google_maps->is_configured() ) {
-			// Fallback to default coordinates if Google Maps not configured.
-			// REMOVED: Fallback causing confusion.
-			return null;
 			return null;
 		}
 
@@ -49,11 +46,6 @@ class Geocoder {
 					array( 'source' => 'woo-envios' )
 				);
 			}
-
-			// Fallback to default coordinates.
-			// REMOVED: Fallback causing confusion. Better to fail than to give wrong coordinates.
-			return null;
-
 			return null;
 		}
 
