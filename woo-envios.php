@@ -200,11 +200,52 @@ final class Woo_Envios_Plugin {
  * @return void
  */
 function woo_envios_bootstrap(): void {
-	if ( ! class_exists( 'WooCommerce' ) ) {
+	// Verificação 1: WordPress deve estar completamente carregado
+	if ( !function_exists( 'add_action' ) || ! function_exists( 'plugin_dir_path' ) ) {
 		return;
 	}
 
-	Woo_Envios_Plugin::instance();
+	// Verificação 2: WooCommerce deve existir
+	if ( ! class_exists( 'WooCommerce' ) ) {
+		// Adiciona aviso no admin se WooCommerce não está ativo
+		add_action( 'admin_notices', function() {
+			echo '<div class="error"><p>';
+			echo esc_html__( 'Woo Envios requer o WooCommerce para funcionar. Por favor, instale e ative o WooCommerce primeiro.', 'woo-envios' );
+			echo '</p></div>';
+		} );
+		return;
+	}
+
+	// Verificação 3: Verificar versão mínima do WooCommerce
+	if ( defined( 'WC_VERSION' ) && version_compare( WC_VERSION, '5.0', '<' ) ) {
+		add_action( 'admin_notices', function() {
+			echo '<div class="error"><p>';
+			echo esc_html__( 'Woo Envios requer WooCommerce 5.0 ou superior.', 'woo-envios' );
+			echo '</p></div>';
+		} );
+		return;
+	}
+
+	// Verificação 4: Tentar inicializar com try-catch para capturar erros fatais
+	try {
+		Woo_Envios_Plugin::instance();
+	} catch ( Throwable $e ) {
+		// Log do erro
+		if ( function_exists( 'error_log' ) ) {
+			error_log( 'Woo Envios Fatal Error: ' . $e->getMessage() . ' in ' . $e->getFile() . ' on line ' . $e->getLine() );
+		}
+		
+		// Mostrar aviso no admin
+		add_action( 'admin_notices', function() use ( $e ) {
+			echo '<div class="error"><p>';
+			echo '<strong>Woo Envios:</strong> ' . esc_html( sprintf( 
+				__( 'Erro crítico detectado: %s', 'woo-envios' ),
+				$e->getMessage()
+			) );
+			echo '</p></div>';
+		} );
+	}
 }
 
-add_action( 'plugins_loaded', 'woo_envios_bootstrap' );
+add_action( 'plugins_loaded', 'woo_envios_bootstrap', 20 ); // Prioridade 20 para carregar após WooCommerce
+
