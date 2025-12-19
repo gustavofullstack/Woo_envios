@@ -4,87 +4,92 @@ on:
   push:
     branches:
       - main
-    paths-ignore:
-      - '.github/**'
-      - 'README.md'
+    paths:
+      - '**'
+      - '!README.md'
+      - '!.github/**'
+
+permissions:
+  contents: write
 
 jobs:
-  release:
-    name: Create Release
+  build-and-release:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
+    
+    # Needs permissions to push to main
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Setup PHP
       uses: shivammathur/setup-php@v2
       with:
         php-version: '8.0'
+        tools: composer:v2
 
-    - name: Get current version
+    - name: Install Composer Dependencies
+      run: composer install --no-dev --optimize-autoloader
+
+    - name: Get Current Version
       id: version
       run: |
-        echo "CURRENT_VERSION=$(grep "Version:" woo-envios.php | awk '{print $3}')" >> $GITHUB_ENV
+        # Extract version from woo-envios.php
+        VERSION=$(grep "Version:" woo-envios.php | awk '{print $3}')
+        echo "Current version: $VERSION"
+        echo "CURRENT_VERSION=$VERSION" >> $GITHUB_ENV
 
-    - name: Bump version
+    - name: Bump Version
       id: bump_version
       run: |
-        # Separar versão X.Y.Z
-        IFS='.' read -r major minor patch <<< "$CURRENT_VERSION"
-        NEW_VERSION="$major.$minor.$((patch + 1))"
-        # Exportar para ENV (scripts subsequentes) e OUTPUT (steps subsequentes)
-        echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
-        echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_OUTPUT
+        # Simple patch version bump logic
+        IFS='.' read -ra VERSION_PARTS <<< "$CURRENT_VERSION"
+        MAJOR=${VERSION_PARTS[0]}
+        MINOR=${VERSION_PARTS[1]}
+        PATCH=${VERSION_PARTS[2]}
+        NEW_PATCH=$((PATCH + 1))
+        NEW_VERSION="$MAJOR.$MINOR.$NEW_PATCH"
         
-        # Atualizar arquivos PHP
+        echo "Bumping to: $NEW_VERSION"
+        echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+        
+        # Update header
         sed -i "s/Version: $CURRENT_VERSION/Version: $NEW_VERSION/" woo-envios.php
-        sed -i "s/VERSION = '$CURRENT_VERSION'/VERSION = '$NEW_VERSION'/" woo-envios.php
-        
-        # Output para o job
-        echo "Created new version: $NEW_VERSION"
+        # Update constant if exists
+        sed -i "s/const VERSION = '$CURRENT_VERSION';/const VERSION = '$NEW_VERSION';/" woo-envios.php
 
-    - name: Update plugin-update.json
+    - name: Commit Version Bump
       run: |
-        # Atualiza a versão no JSON
-        sed -i "s/\"version\": \".*\"/\"version\": \"$NEW_VERSION\"/" plugin-update.json
-        
-        # Atualiza a URL de download (Ex: .../v3.1.1/woo-envios-3.1.1.zip)
-        DOWNLOAD_URL="https://github.com/gustavofullstack/Woo_envios/releases/download/v$NEW_VERSION/woo-envios-$NEW_VERSION.zip"
-        # Usando separador | no sed para evitar conflito com barras da URL
-        sed -i "s|\"download_url\": \".*\"|\"download_url\": \"$DOWNLOAD_URL\"|" plugin-update.json
-        
-        # Atualiza data
-        NOW=$(date '+%Y-%m-%d %H:%M:%S')
-        sed -i "s|\"last_updated\": \".*\"|\"last_updated\": \"$NOW\"|" plugin-update.json
-        
-        # Atualiza changelog (exemplo simples)
-        NEW_CHANGELOG="<h4>$NEW_VERSION</h4><ul><li>Release automática gerada em $NOW</li></ul>"
-        sed -i "s|\"changelog\": \".*\"|\"changelog\": \"$NEW_CHANGELOG\"|" plugin-update.json
+        git config user.name "GitHub Actions"
+        git config user.email "actions@github.com"
+        git add woo-envios.php
+        # Check if there are changes before committing
+        if git diff --staged --quiet; then
+          echo "No changes to commit"
+        else
+          git commit -m "chore: bump version to ${{ steps.bump_version.outputs.new_version }} [skip ci]"
+          git push
+        fi
 
-    - name: Commit version bump
+    - name: Create Zip Artifact
       run: |
-        git config --global user.name 'github-actions[bot]'
-        git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-        git add woo-envios.php plugin-update.json
-        git commit -m "chore: bump version to $NEW_VERSION"
-        git push origin main
-
-    - name: Create ZIP artifact
-      run: |
-        # Criar pasta temporária para zipar limpo
-        mkdir woo-envios
-        rsync -av --progress . woo-envios --exclude .git --exclude .github --exclude woo-envios --exclude .gitignore --exclude test-envios.php --exclude update_pricing.sql --exclude ATUALIZAR_PRECOS.txt
-        zip -r "woo-envios-$NEW_VERSION.zip" woo-envios
+        # Create a build directory
+        mkdir -p build/woo-envios
+        
+        # Copy files to build dir, excluding unwanted
+        rsync -av --progress . build/woo-envios --exclude .git --exclude .github --exclude build --exclude composer.json --exclude composer.lock --exclude .gitignore
+        
+        # Zip it
+        cd build
+        zip -r ../woo-envios.zip woo-envios
 
     - name: Create Release
-      uses: softprops/action-gh-release@v1
+      uses: ncipollo/release-action@v1
       with:
-        tag_name: "v${{ steps.bump_version.outputs.NEW_VERSION }}"
-        name: "Release v${{ steps.bump_version.outputs.NEW_VERSION }}"
-        body: "Auto-generated release from commit ${{ github.sha }}"
-        files: "woo-envios-${{ steps.bump_version.outputs.NEW_VERSION }}.zip"
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        tag: v${{ steps.bump_version.outputs.new_version }}
+        name: Release v${{ steps.bump_version.outputs.new_version }}
+        artifacts: "woo-envios.zip"
+        token: ${{ secrets.GITHUB_TOKEN }}
+        body: "Automated release of version v${{ steps.bump_version.outputs.new_version }}"
+        makeLatest: true

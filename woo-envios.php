@@ -106,16 +106,26 @@ final class Woo_Envios_Plugin {
 	/**
 	 * Initialize GitHub Updater.
 	 */
-	private function init_updater(): void {
-		if ( ! class_exists( 'Woo_Envios_Updater' ) ) {
-			return;
-		}
 
-		new Woo_Envios_Updater(
-			__FILE__,
-			'gustavofullstack',
-			'Woo_envios'
-		);
+	private function init_updater(): void {
+		if ( file_exists( WOO_ENVIOS_PATH . 'vendor/autoload.php' ) ) {
+			require_once WOO_ENVIOS_PATH . 'vendor/autoload.php';
+		} elseif ( file_exists( WOO_ENVIOS_PATH . 'plugin-update-checker/plugin-update-checker.php' ) ) {
+            require_once WOO_ENVIOS_PATH . 'plugin-update-checker/plugin-update-checker.php';
+        } else {
+            return; // Updater not found
+        }
+
+        if ( class_exists( 'YahnisElsts\PluginUpdateChecker\v5\PucFactory' ) ) {
+            $myUpdateChecker = \YahnisElsts\PluginUpdateChecker\v5\PucFactory::buildUpdateChecker(
+                'https://github.com/gustavofullstack/Woo_envios',
+                __FILE__,
+                'woo-envios'
+            );
+            
+            // Set the branch that contains the stable release.
+            $myUpdateChecker->getVcsApi()->enableReleaseAssets();
+        }
 	}
 
 	/**

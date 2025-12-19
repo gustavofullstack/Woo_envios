@@ -1,0 +1,20 @@
+{
+    "name": "gustavofullstack/woo-envios",
+    "description": "Automatiza a coleta de coordenadas no checkout (CEP brasileiro) para integrar regras de frete por raio no WooCommerce.",
+    "type": "wordpress-plugin",
+    "require": {
+        "yahnis-elsts/plugin-update-checker": "^5.0"
+    },
+    "license": "GPL-2.0-or-later",
+    "authors": [
+        {
+            "name": "Gustavo Almeida",
+            "email": "gustavo@example.com"
+        }
+    ],
+    "autoload": {
+        "files": [
+            "includes/Services/Geocoder.php"
+        ]
+    }
+}
