@@ -91,7 +91,12 @@ class Woo_Envios_Google_Maps_Admin {
 		$is_configured = ! empty( $api_key );
 		$show_wizard   = ! $is_configured && empty( $_GET['skip_wizard'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
-		include WOO_ENVIOS_PATH . 'templates/admin/admin-google-maps-settings.php';
+		$template_path = WOO_ENVIOS_PATH . 'includes/admin-google-maps-settings.php';
+		if ( file_exists( $template_path ) ) {
+			include $template_path;
+		} else {
+			echo '<div class="error"><p>' . esc_html__( 'Erro: Arquivo de template de configurações não encontrado.', 'woo-envios' ) . '</p></div>';
+		}
 	}
 
 	/**
