@@ -74,7 +74,7 @@ jobs:
       run: |
         # Criar pasta temporária para zipar limpo
         mkdir woo-envios
-        rsync -av --progress . woo-envios --exclude .git --exclude .github --exclude woo-envios --exclude .gitignore
+        rsync -av --progress . woo-envios --exclude .git --exclude .github --exclude woo-envios --exclude .gitignore --exclude test-envios.php --exclude update_pricing.sql --exclude ATUALIZAR_PRECOS.txt
         zip -r "woo-envios-$NEW_VERSION.zip" woo-envios
 
     - name: Create Release

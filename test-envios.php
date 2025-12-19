@@ -1,7 +1,7 @@
 <?php
 /**
- * Plugin Name: Woo Envios - SUPER TEST PROTOCOL
- * Description: Executa a FASE 2 do protocolo de testes do usuário.
+ * Script de Teste: Woo Envios
+ * Descrição: Executa a FASE 2 do protocolo de testes do usuário.
  */
 
 add_action('init', function() {
