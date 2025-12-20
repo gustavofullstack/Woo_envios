@@ -162,8 +162,8 @@ class Woo_Envios_Shipping_Method extends WC_Shipping_Method {
 	 * @return void
 	 */
 	private function calculate_correios_shipping( array $package ): void {
-		// Check if Correios is enabled.
-		$correios = new \Woo_Envios\Services\Correios();
+		// Check if SuperFrete/Correios is enabled.
+		$correios = new \Woo_Envios\Services\Woo_Envios_Correios();
 		
 		if ( ! $correios->is_enabled() ) {
 			return;

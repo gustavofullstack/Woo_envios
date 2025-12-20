@@ -348,14 +348,13 @@ final class Woo_Envios_Admin {
 		// Logging Settings
 		register_setting( 'woo_envios_settings', 'woo_envios_enable_logs', array( 'type' => 'boolean', 'default' => false ) );
 
-		// Correios Settings
-		register_setting( 'woo_envios_settings', 'woo_envios_correios_enabled', array( 'type' => 'boolean', 'default' => false ) );
-		register_setting( 'woo_envios_settings', 'woo_envios_correios_origin_cep', array( 'type' => 'string', 'default' => '38400-000', 'sanitize_callback' => 'sanitize_text_field' ) );
-		register_setting( 'woo_envios_settings', 'woo_envios_correios_services', array( 'type' => 'array', 'default' => array( '04510', '04014' ) ) );
-		register_setting( 'woo_envios_settings', 'woo_envios_correios_profit_margin', array( 'type' => 'number', 'default' => 0 ) );
-		register_setting( 'woo_envios_settings', 'woo_envios_correios_contract_code', array( 'type' => 'string', 'default' => '', 'sanitize_callback' => 'sanitize_text_field' ) );
-		register_setting( 'woo_envios_settings', 'woo_envios_correios_contract_password', array( 'type' => 'string', 'default' => '', 'sanitize_callback' => 'sanitize_text_field' ) );
-		register_setting( 'woo_envios_settings', 'woo_envios_correios_contingency_enabled', array( 'type' => 'boolean', 'default' => true ) );
+		// SuperFrete Settings (shipping quotes API)
+		register_setting( 'woo_envios_settings', 'woo_envios_superfrete_enabled', array( 'type' => 'boolean', 'default' => true ) );
+		register_setting( 'woo_envios_settings', 'woo_envios_superfrete_token', array( 'type' => 'string', 'default' => '', 'sanitize_callback' => 'sanitize_text_field' ) );
+		register_setting( 'woo_envios_settings', 'woo_envios_superfrete_origin_cep', array( 'type' => 'string', 'default' => '38405320', 'sanitize_callback' => 'sanitize_text_field' ) );
+		register_setting( 'woo_envios_settings', 'woo_envios_superfrete_services', array( 'type' => 'array', 'default' => array( '1', '2' ) ) );
+		register_setting( 'woo_envios_settings', 'woo_envios_superfrete_profit_margin', array( 'type' => 'number', 'default' => 0 ) );
+		register_setting( 'woo_envios_settings', 'woo_envios_superfrete_sandbox', array( 'type' => 'boolean', 'default' => false ) );
 	}
 
 	/**
@@ -708,93 +707,90 @@ final class Woo_Envios_Admin {
 					</div>
 				</section>
 
-				<section class="woo-envios-card" style="border-left: 4px solid #e74c3c;">
-					<h2><?php esc_html_e( '📦 Integração Correios', 'woo-envios' ); ?></h2>
-					<p><?php esc_html_e( 'Configure o envio via Correios para clientes fora do raio de entrega local. Quando o cliente estiver além das faixas configuradas abaixo, o sistema irá calcular frete via PAC/SEDEX.', 'woo-envios' ); ?></p>
+				<section class="woo-envios-card" style="border-left: 4px solid #00b894;">
+					<h2><?php esc_html_e( '🚚 SuperFrete - Cotação de Frete', 'woo-envios' ); ?></h2>
+					<p><?php esc_html_e( 'Configure o envio via PAC/SEDEX para clientes fora do raio de entrega local. Usa a API SuperFrete para cotações em tempo real.', 'woo-envios' ); ?></p>
 
 					<label class="woo-envios-field">
-						<input type="checkbox" name="woo_envios_correios_enabled" value="1" <?php checked( get_option( 'woo_envios_correios_enabled', false ) ); ?> />
-						<span><?php esc_html_e( 'Habilitar integração com Correios', 'woo-envios' ); ?></span>
+						<input type="checkbox" name="woo_envios_superfrete_enabled" value="1" <?php checked( get_option( 'woo_envios_superfrete_enabled', true ) ); ?> />
+						<span><?php esc_html_e( 'Habilitar cotação via SuperFrete', 'woo-envios' ); ?></span>
 					</label>
 
-					<div id="correios-settings" style="<?php echo get_option( 'woo_envios_correios_enabled' ) ? '' : 'display:none;'; ?>">
-						<div class="woo-envios-grid" style="margin-top: 20px;">
+					<div id="superfrete-settings" style="<?php echo get_option( 'woo_envios_superfrete_enabled', true ) ? '' : 'display:none;'; ?>">
+						
+						<h3 style="margin-top: 20px;"><?php esc_html_e( '🔑 Credenciais da API', 'woo-envios' ); ?></h3>
+						
+						<div class="woo-envios-grid">
 							<label class="woo-envios-field">
-								<span><?php esc_html_e( 'CEP de Origem', 'woo-envios' ); ?></span>
-								<input type="text" name="woo_envios_correios_origin_cep" value="<?php echo esc_attr( get_option( 'woo_envios_correios_origin_cep', '38400-000' ) ); ?>" placeholder="38400-000" class="regular-text" />
-								<p class="description"><?php esc_html_e( 'CEP de onde as encomendas serão postadas (sua loja/CD).', 'woo-envios' ); ?></p>
+								<span><?php esc_html_e( 'Token SuperFrete', 'woo-envios' ); ?></span>
+								<input type="text" name="woo_envios_superfrete_token" value="<?php echo esc_attr( get_option( 'woo_envios_superfrete_token', '' ) ); ?>" placeholder="eyJhbGciOiJIUzI1NiIs..." class="regular-text" style="font-family: monospace; font-size: 11px;" />
+								<p class="description">
+									<?php
+									printf(
+										esc_html__( 'Obtenha grátis em %s → Integrações → Developers', 'woo-envios' ),
+										'<a href="https://web.superfrete.com/#/integrations" target="_blank">web.superfrete.com</a>'
+									);
+									?>
+								</p>
 							</label>
 
 							<label class="woo-envios-field">
-								<span><?php esc_html_e( 'Margem de Lucro (%)', 'woo-envios' ); ?></span>
-								<input type="number" step="0.1" min="0" max="100" name="woo_envios_correios_profit_margin" value="<?php echo esc_attr( get_option( 'woo_envios_correios_profit_margin', 0 ) ); ?>" />
-								<p class="description"><?php esc_html_e( 'Porcentagem adicional sobre o valor dos Correios (0 = sem margem).', 'woo-envios' ); ?></p>
+								<span><?php esc_html_e( 'CEP de Origem', 'woo-envios' ); ?></span>
+								<input type="text" name="woo_envios_superfrete_origin_cep" value="<?php echo esc_attr( get_option( 'woo_envios_superfrete_origin_cep', '38405320' ) ); ?>" placeholder="38405-320" class="regular-text" />
+								<p class="description"><?php esc_html_e( 'CEP cadastrado na sua conta SuperFrete.', 'woo-envios' ); ?></p>
 							</label>
 						</div>
 
-						<h3><?php esc_html_e( 'Serviços Ativos', 'woo-envios' ); ?></h3>
-						<p class="description"><?php esc_html_e( 'Selecione os serviços dos Correios que deseja oferecer:', 'woo-envios' ); ?></p>
+						<div class="woo-envios-grid" style="margin-top: 15px;">
+							<label class="woo-envios-field">
+								<span><?php esc_html_e( 'Margem de Lucro (%)', 'woo-envios' ); ?></span>
+								<input type="number" step="0.1" min="0" max="100" name="woo_envios_superfrete_profit_margin" value="<?php echo esc_attr( get_option( 'woo_envios_superfrete_profit_margin', 0 ) ); ?>" />
+								<p class="description"><?php esc_html_e( 'Adiciona X% sobre o valor do frete (0 = sem margem).', 'woo-envios' ); ?></p>
+							</label>
+
+							<label class="woo-envios-field">
+								<input type="checkbox" name="woo_envios_superfrete_sandbox" value="1" <?php checked( get_option( 'woo_envios_superfrete_sandbox', false ) ); ?> />
+								<span><?php esc_html_e( 'Modo Sandbox (testes)', 'woo-envios' ); ?></span>
+							</label>
+						</div>
+
+						<h3 style="margin-top: 20px;"><?php esc_html_e( '📦 Serviços Ativos', 'woo-envios' ); ?></h3>
+						<p class="description"><?php esc_html_e( 'Selecione os serviços que deseja oferecer:', 'woo-envios' ); ?></p>
 						<?php
-						$available_services = \Woo_Envios\Services\Correios::get_available_services();
-						$active_services = get_option( 'woo_envios_correios_services', array( '04510', '04014' ) );
+						$available_services = array(
+							'1'  => 'PAC',
+							'2'  => 'SEDEX',
+							'17' => 'Mini Envios',
+						);
+						$active_services = get_option( 'woo_envios_superfrete_services', array( '1', '2' ) );
 						if ( ! is_array( $active_services ) ) {
-							$active_services = array( '04510', '04014' );
+							$active_services = array( '1', '2' );
 						}
 						?>
 						<div style="display: flex; gap: 20px; flex-wrap: wrap; margin: 10px 0;">
 							<?php foreach ( $available_services as $code => $name ) : ?>
 								<label>
-									<input type="checkbox" name="woo_envios_correios_services[]" value="<?php echo esc_attr( $code ); ?>" <?php checked( in_array( $code, $active_services, true ) ); ?> />
+									<input type="checkbox" name="woo_envios_superfrete_services[]" value="<?php echo esc_attr( $code ); ?>" <?php checked( in_array( $code, $active_services, true ) ); ?> />
 									<?php echo esc_html( $name ); ?>
 								</label>
 							<?php endforeach; ?>
 						</div>
 
-						<h3><?php esc_html_e( 'Contrato Corporativo (Opcional)', 'woo-envios' ); ?></h3>
-						<p class="description"><?php esc_html_e( 'Se você possui contrato com os Correios, informe as credenciais para obter preços reduzidos. Deixe em branco para usar preço de balcão.', 'woo-envios' ); ?></p>
-						<div class="woo-envios-grid">
-							<label class="woo-envios-field">
-								<span><?php esc_html_e( 'Código Administrativo', 'woo-envios' ); ?></span>
-								<input type="text" name="woo_envios_correios_contract_code" value="<?php echo esc_attr( get_option( 'woo_envios_correios_contract_code', '' ) ); ?>" placeholder="<?php esc_attr_e( 'Opcional', 'woo-envios' ); ?>" class="regular-text" />
-							</label>
-
-							<label class="woo-envios-field">
-								<span><?php esc_html_e( 'Senha do Contrato', 'woo-envios' ); ?></span>
-								<input type="password" name="woo_envios_correios_contract_password" value="<?php echo esc_attr( get_option( 'woo_envios_correios_contract_password', '' ) ); ?>" placeholder="<?php esc_attr_e( 'Opcional', 'woo-envios' ); ?>" class="regular-text" />
-							</label>
-						</div>
-
 						<?php
-						// Show status message
-						$correios_enabled = get_option( 'woo_envios_correios_enabled', false );
-						if ( $correios_enabled ) :
+						// Status message
+						$token = get_option( 'woo_envios_superfrete_token', '' );
+						if ( ! empty( $token ) ) :
 						?>
 							<div style="padding: 10px; background: #d4edda; border-left: 4px solid #28a745; margin-top: 15px;">
-								<strong>✓ <?php esc_html_e( 'Correios Ativo', 'woo-envios' ); ?></strong><br>
-								<small><?php esc_html_e( 'Clientes fora do raio local receberão cotações de frete via Correios automaticamente.', 'woo-envios' ); ?></small>
+								<strong>✓ <?php esc_html_e( 'SuperFrete Configurado', 'woo-envios' ); ?></strong><br>
+								<small><?php esc_html_e( 'Cotações em tempo real ativas. Clientes fora do raio local receberão opções PAC/SEDEX.', 'woo-envios' ); ?></small>
+							</div>
+						<?php else : ?>
+							<div style="padding: 10px; background: #f8d7da; border-left: 4px solid #dc3545; margin-top: 15px;">
+								<strong>⚠️ <?php esc_html_e( 'Token Não Configurado', 'woo-envios' ); ?></strong><br>
+								<small><?php esc_html_e( 'Sem token, o frete para clientes fora do raio local não será calculado.', 'woo-envios' ); ?></small>
 							</div>
 						<?php endif; ?>
-
-						<h3 style="margin-top: 25px;"><?php esc_html_e( '🛡️ Modo Contingência (Fallback)', 'woo-envios' ); ?></h3>
-						<p class="description"><?php esc_html_e( 'Quando a API dos Correios falhar (timeout, fora do ar), o sistema usa uma tabela de preços fixa por estado para garantir que o checkout nunca trave.', 'woo-envios' ); ?></p>
-
-						<label class="woo-envios-field">
-							<input type="checkbox" name="woo_envios_correios_contingency_enabled" value="1" <?php checked( get_option( 'woo_envios_correios_contingency_enabled', true ) ); ?> />
-							<span><?php esc_html_e( 'Habilitar modo contingência (recomendado)', 'woo-envios' ); ?></span>
-						</label>
-
-						<div style="padding: 10px; background: #fff3cd; border-left: 4px solid #ffc107; margin-top: 10px;">
-							<strong>⚠️ <?php esc_html_e( 'Como funciona:', 'woo-envios' ); ?></strong><br>
-							<small>
-								<?php esc_html_e( 'Se a API dos Correios não responder em 10 segundos ou retornar erro, o sistema automaticamente usa preços pré-definidos por estado (UF). Os prazos mostram um asterisco (*) para indicar estimativa.', 'woo-envios' ); ?>
-								<br><br>
-								<strong><?php esc_html_e( 'Exemplo de preços de contingência:', 'woo-envios' ); ?></strong><br>
-								• MG: PAC R$18 / SEDEX R$28<br>
-								• SP/RJ: PAC R$22-24 / SEDEX R$35-38<br>
-								• Nordeste: PAC R$35-52 / SEDEX R$55-75<br>
-								• Norte: PAC R$45-70 / SEDEX R$68-100
-							</small>
-						</div>
 					</div>
 				</section>
 
