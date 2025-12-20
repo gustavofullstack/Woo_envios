@@ -186,6 +186,43 @@ class Woo_Envios_Correios {
 	}
 
 	/**
+	 * Calculate shipping for debug purposes (without WooCommerce package).
+	 *
+	 * @param string $destination_cep Destination CEP (8 digits).
+	 * @param float  $weight          Weight in kg (default 1.0).
+	 * @param array  $dimensions      Dimensions array (default 10x15x20).
+	 * @param float  $cart_value      Cart value (default 100).
+	 * @return array|false Array of rates or false on failure.
+	 */
+	public function calculate_debug( string $destination_cep, float $weight = 1.0, array $dimensions = array(), float $cart_value = 100.0 ) {
+		if ( ! $this->is_enabled() ) {
+			return new \WP_Error( 'not_configured', 'SuperFrete não configurado. Verifique token e CEP origem.' );
+		}
+
+		$destination_cep = $this->sanitize_cep( $destination_cep );
+
+		if ( empty( $destination_cep ) || strlen( $destination_cep ) !== 8 ) {
+			return new \WP_Error( 'invalid_cep', 'CEP destino inválido: ' . $destination_cep );
+		}
+
+		// Default dimensions
+		$dimensions = array_merge( array(
+			'height' => 10,
+			'width'  => 15,
+			'length' => 20,
+		), $dimensions );
+
+		// Call API directly
+		$rates = $this->call_superfrete_api( $destination_cep, $weight, $dimensions, $cart_value );
+
+		if ( empty( $rates ) ) {
+			return new \WP_Error( 'no_rates', 'Nenhuma cotação retornada para CEP: ' . $destination_cep );
+		}
+
+		return $this->apply_profit_margin( $rates );
+	}
+
+	/**
 	 * Call SuperFrete API.
 	 *
 	 * @param string $destination_cep Destination CEP.

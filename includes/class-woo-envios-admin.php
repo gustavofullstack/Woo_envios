@@ -388,13 +388,8 @@ final class Woo_Envios_Admin {
 			return array( 'error' => 'SuperFrete não configurado. Configure o token nas configurações.' );
 		}
 
-		// Default package dimensions for testing
-		$rates = $correios->calculate(
-			$destination_cep,
-			1.0, // 1kg
-			array( 'height' => 10, 'width' => 15, 'length' => 20 ),
-			100 // R$ 100 cart value
-		);
+		// Use debug calculate method (doesn't require WooCommerce package)
+		$rates = $correios->calculate_debug( $destination_cep );
 
 		if ( empty( $rates ) || is_wp_error( $rates ) ) {
 			$error_msg = is_wp_error( $rates ) ? $rates->get_error_message() : 'Nenhuma cotação retornada';
