@@ -2,6 +2,20 @@
 
 Todas as mudanças notáveis deste projeto são documentadas aqui.
 
+## [3.1.26] - 2024-12-20
+
+### ✨ Novidades
+- **Método de Entrega SuperFrete** - Agora aparece nas zonas de entrega do WooCommerce
+  - Adicione "SuperFrete (PAC/SEDEX/Mini)" em Configurações → Entrega
+  - Funciona igual ao método "Flash" mas para clientes fora do raio
+
+### 🐛 Correções
+- Corrigido prazo de entrega mostrando "?" no debug
+- Campo `deadline` mapeado corretamente
+- Método `calculate_debug()` para testes sem WooCommerce package
+
+---
+
 ## [3.1.21] - 2024-12-20
 
 ### ✨ Novidades
