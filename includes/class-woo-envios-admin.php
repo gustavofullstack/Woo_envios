@@ -352,7 +352,11 @@ final class Woo_Envios_Admin {
 		register_setting( 'woo_envios_settings', 'woo_envios_superfrete_enabled', array( 'type' => 'boolean', 'default' => true ) );
 		register_setting( 'woo_envios_settings', 'woo_envios_superfrete_token', array( 'type' => 'string', 'default' => '', 'sanitize_callback' => 'sanitize_text_field' ) );
 		register_setting( 'woo_envios_settings', 'woo_envios_superfrete_origin_cep', array( 'type' => 'string', 'default' => '38405320', 'sanitize_callback' => 'sanitize_text_field' ) );
-		register_setting( 'woo_envios_settings', 'woo_envios_superfrete_services', array( 'type' => 'array', 'default' => array( '1', '2' ) ) );
+		register_setting( 'woo_envios_settings', 'woo_envios_superfrete_services', array( 
+			'type' => 'array', 
+			'default' => array( '1', '2' ),
+			'sanitize_callback' => array( $this, 'sanitize_superfrete_services' ),
+		) );
 		register_setting( 'woo_envios_settings', 'woo_envios_superfrete_profit_margin', array( 'type' => 'number', 'default' => 0 ) );
 		register_setting( 'woo_envios_settings', 'woo_envios_superfrete_sandbox', array( 'type' => 'boolean', 'default' => false ) );
 	}
@@ -430,6 +434,30 @@ final class Woo_Envios_Admin {
 	public function sanitize_coordinate( string $value ): string {
 		$value = str_replace( ',', '.', $value );
 		return is_numeric( $value ) ? (string) $value : '0';
+	}
+
+	/**
+	 * Sanitize SuperFrete services array.
+	 *
+	 * @param mixed $services Services array from form.
+	 * @return array Sanitized array of service codes.
+	 */
+	public function sanitize_superfrete_services( $services ): array {
+		if ( ! is_array( $services ) ) {
+			return array( '1', '2' ); // Default
+		}
+
+		$valid_services = array( '1', '2', '17', '3', '31' );
+		$sanitized = array();
+
+		foreach ( $services as $service ) {
+			$service = sanitize_text_field( $service );
+			if ( in_array( $service, $valid_services, true ) ) {
+				$sanitized[] = $service;
+			}
+		}
+
+		return ! empty( $sanitized ) ? $sanitized : array( '1', '2' );
 	}
 
 	/**
@@ -754,24 +782,24 @@ final class Woo_Envios_Admin {
 							</label>
 						</div>
 
-						<h3 style="margin-top: 20px;"><?php esc_html_e( '📦 Serviços Ativos', 'woo-envios' ); ?></h3>
+						<h3><?php esc_html_e( '📦 Serviços Ativos', 'woo-envios' ); ?></h3>
 						<p class="description"><?php esc_html_e( 'Selecione os serviços que deseja oferecer:', 'woo-envios' ); ?></p>
 						<?php
 						$available_services = array(
-							'1'  => 'PAC',
-							'2'  => 'SEDEX',
-							'17' => 'Mini Envios',
+							'1'  => array( 'name' => 'PAC', 'desc' => 'Econômico' ),
+							'2'  => array( 'name' => 'SEDEX', 'desc' => 'Expresso' ),
+							'17' => array( 'name' => 'Mini Envios', 'desc' => 'Até 300g' ),
 						);
 						$active_services = get_option( 'woo_envios_superfrete_services', array( '1', '2' ) );
 						if ( ! is_array( $active_services ) ) {
 							$active_services = array( '1', '2' );
 						}
 						?>
-						<div style="display: flex; gap: 20px; flex-wrap: wrap; margin: 10px 0;">
-							<?php foreach ( $available_services as $code => $name ) : ?>
+						<div class="woo-envios-services-grid">
+							<?php foreach ( $available_services as $code => $service ) : ?>
 								<label>
 									<input type="checkbox" name="woo_envios_superfrete_services[]" value="<?php echo esc_attr( $code ); ?>" <?php checked( in_array( $code, $active_services, true ) ); ?> />
-									<?php echo esc_html( $name ); ?>
+									<span><?php echo esc_html( $service['name'] ); ?></span>
 								</label>
 							<?php endforeach; ?>
 						</div>
@@ -781,13 +809,13 @@ final class Woo_Envios_Admin {
 						$token = get_option( 'woo_envios_superfrete_token', '' );
 						if ( ! empty( $token ) ) :
 						?>
-							<div style="padding: 10px; background: #d4edda; border-left: 4px solid #28a745; margin-top: 15px;">
-								<strong>✓ <?php esc_html_e( 'SuperFrete Configurado', 'woo-envios' ); ?></strong><br>
+							<div class="woo-envios-alert woo-envios-alert-success">
+								<strong>✓ <?php esc_html_e( 'SuperFrete Configurado', 'woo-envios' ); ?></strong>
 								<small><?php esc_html_e( 'Cotações em tempo real ativas. Clientes fora do raio local receberão opções PAC/SEDEX.', 'woo-envios' ); ?></small>
 							</div>
 						<?php else : ?>
-							<div style="padding: 10px; background: #f8d7da; border-left: 4px solid #dc3545; margin-top: 15px;">
-								<strong>⚠️ <?php esc_html_e( 'Token Não Configurado', 'woo-envios' ); ?></strong><br>
+							<div class="woo-envios-alert woo-envios-alert-danger">
+								<strong>⚠️ <?php esc_html_e( 'Token Não Configurado', 'woo-envios' ); ?></strong>
 								<small><?php esc_html_e( 'Sem token, o frete para clientes fora do raio local não será calculado.', 'woo-envios' ); ?></small>
 							</div>
 						<?php endif; ?>

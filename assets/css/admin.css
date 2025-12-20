@@ -1,81 +1,457 @@
+/**
+ * Woo Envios Admin - Modern Minimalist Design
+ * Version: 2.0
+ */
+
+/* ========================================
+   CSS Variables - Design Tokens
+   ======================================== */
+:root {
+  --we-primary: #00b894;
+  --we-primary-hover: #00a382;
+  --we-secondary: #6c5ce7;
+  --we-danger: #d63031;
+  --we-warning: #fdcb6e;
+  --we-success: #00b894;
+  --we-text: #2d3436;
+  --we-text-light: #636e72;
+  --we-border: #e1e5e9;
+  --we-bg: #f8f9fa;
+  --we-card-bg: #ffffff;
+  --we-radius: 12px;
+  --we-radius-sm: 8px;
+  --we-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  --we-shadow-lg: 0 4px 20px rgba(0,0,0,0.1);
+  --we-transition: all 0.2s ease;
+}
+
+/* ========================================
+   Base Layout
+   ======================================== */
 .woo-envios-wrap {
-	max-width: 960px;
+  max-width: 900px;
+  margin: 0;
+  padding: 20px 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
+.woo-envios-wrap h1 {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--we-text);
+  margin-bottom: 24px;
+}
+
+/* ========================================
+   Cards - Main Content Sections
+   ======================================== */
 .woo-envios-card {
-	background: #fff;
-	padding: 24px;
-	margin-bottom: 24px;
-	border: 1px solid #e2e2e2;
-	border-radius: 6px;
+  background: var(--we-card-bg);
+  padding: 28px;
+  margin-bottom: 20px;
+  border: none;
+  border-radius: var(--we-radius);
+  box-shadow: var(--we-shadow);
+  transition: var(--we-transition);
 }
 
+.woo-envios-card:hover {
+  box-shadow: var(--we-shadow-lg);
+}
+
+.woo-envios-card h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--we-text);
+  margin: 0 0 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.woo-envios-card > p {
+  color: var(--we-text-light);
+  font-size: 14px;
+  margin: 0 0 20px;
+  line-height: 1.5;
+}
+
+.woo-envios-card h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--we-text);
+  margin: 24px 0 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ========================================
+   Form Fields
+   ======================================== */
 .woo-envios-field {
-	display: flex;
-	flex-direction: column;
-	margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 20px;
 }
 
-.woo-envios-field span {
-	font-weight: 600;
-	margin-bottom: 4px;
+.woo-envios-field > span {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--we-text);
+  margin-bottom: 6px;
 }
 
+.woo-envios-field input[type="text"],
+.woo-envios-field input[type="number"],
+.woo-envios-field input[type="password"],
+.woo-envios-field input[type="email"],
+.woo-envios-field textarea,
+.woo-envios-field select {
+  padding: 10px 14px;
+  border: 1px solid var(--we-border);
+  border-radius: var(--we-radius-sm);
+  font-size: 14px;
+  color: var(--we-text);
+  background: var(--we-card-bg);
+  transition: var(--we-transition);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.woo-envios-field input:focus,
+.woo-envios-field textarea:focus,
+.woo-envios-field select:focus {
+  outline: none;
+  border-color: var(--we-primary);
+  box-shadow: 0 0 0 3px rgba(0, 184, 148, 0.15);
+}
+
+.woo-envios-field .description {
+  font-size: 12px;
+  color: var(--we-text-light);
+  margin-top: 6px;
+}
+
+/* ========================================
+   Checkboxes - Modern Style
+   ======================================== */
+.woo-envios-field input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin-right: 10px;
+  accent-color: var(--we-primary);
+  cursor: pointer;
+}
+
+/* Services checkboxes grid */
+.woo-envios-services-grid {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin: 12px 0;
+}
+
+.woo-envios-services-grid label {
+  display: flex;
+  align-items: center;
+  padding: 12px 18px;
+  background: var(--we-bg);
+  border-radius: var(--we-radius-sm);
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: var(--we-transition);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.woo-envios-services-grid label:hover {
+  background: #e8f5f0;
+  border-color: var(--we-primary);
+}
+
+.woo-envios-services-grid label:has(input:checked) {
+  background: #e8f5f0;
+  border-color: var(--we-primary);
+  color: var(--we-primary);
+}
+
+.woo-envios-services-grid input[type="checkbox"] {
+  margin-right: 8px;
+}
+
+/* ========================================
+   Grid Layout
+   ======================================== */
+.woo-envios-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
+}
+
+/* ========================================
+   Status Alerts
+   ======================================== */
+.woo-envios-alert {
+  padding: 14px 18px;
+  border-radius: var(--we-radius-sm);
+  margin-top: 16px;
+  font-size: 14px;
+}
+
+.woo-envios-alert-success {
+  background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+  border-left: 4px solid var(--we-success);
+}
+
+.woo-envios-alert-warning {
+  background: linear-gradient(135deg, #fff3cd 0%, #ffeeba 100%);
+  border-left: 4px solid #ffc107;
+}
+
+.woo-envios-alert-danger {
+  background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+  border-left: 4px solid var(--we-danger);
+}
+
+.woo-envios-alert-info {
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+  border-left: 4px solid #2196f3;
+}
+
+.woo-envios-alert strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.woo-envios-alert small {
+  opacity: 0.85;
+}
+
+/* ========================================
+   Map Container
+   ======================================== */
 #woo-envios-admin-map {
-	height: 320px;
-	border: 1px solid #dcdcdc;
-	margin: 12px 0;
+  height: 350px;
+  border-radius: var(--we-radius-sm);
+  border: none;
+  box-shadow: var(--we-shadow);
+  margin: 16px 0;
 }
 
+/* ========================================
+   Search
+   ======================================== */
 .woo-envios-search {
-	margin: 12px 0 20px;
+  margin: 16px 0 24px;
 }
 
 .woo-envios-search-controls {
-	display: flex;
-	gap: 8px;
-	margin: 6px 0;
+  display: flex;
+  gap: 10px;
+  margin: 8px 0;
 }
 
 .woo-envios-search-controls input {
-	flex: 1;
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid var(--we-border);
+  border-radius: var(--we-radius-sm);
+  font-size: 14px;
+}
+
+.woo-envios-search-controls input:focus {
+  outline: none;
+  border-color: var(--we-primary);
+  box-shadow: 0 0 0 3px rgba(0, 184, 148, 0.15);
 }
 
 #woo-envios-search-results {
-	list-style: none;
-	padding: 0;
-	margin: 10px 0 0;
-	border: 1px solid #ececec;
-	max-height: 180px;
-	overflow-y: auto;
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 0;
+  border-radius: var(--we-radius-sm);
+  background: var(--we-card-bg);
+  box-shadow: var(--we-shadow);
+  max-height: 200px;
+  overflow-y: auto;
 }
 
 #woo-envios-search-results li {
-	padding: 8px 10px;
-	border-bottom: 1px solid #f2f2f2;
-	cursor: pointer;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--we-border);
+  cursor: pointer;
+  transition: var(--we-transition);
+  font-size: 14px;
 }
 
 #woo-envios-search-results li:hover {
-	background: #f5f5f5;
+  background: var(--we-bg);
+}
+
+#woo-envios-search-results li:last-child {
+  border-bottom: none;
 }
 
 #woo-envios-search-results li.woo-envios-result-message {
-	cursor: default;
-	background: none;
+  cursor: default;
+  color: var(--we-text-light);
 }
 
-.woo-envios-grid {
-	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-	gap: 16px;
+/* ========================================
+   Tiers Table
+   ======================================== */
+.woo-envios-tiers {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+}
+
+.woo-envios-tiers th {
+  text-align: left;
+  padding: 12px;
+  background: var(--we-bg);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--we-text-light);
+  border-radius: var(--we-radius-sm) var(--we-radius-sm) 0 0;
+}
+
+.woo-envios-tiers td {
+  padding: 12px;
+  border-bottom: 1px solid var(--we-border);
+  vertical-align: middle;
 }
 
 .woo-envios-tiers input {
-	width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--we-border);
+  border-radius: var(--we-radius-sm);
+  font-size: 14px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.woo-envios-tiers td,
-.woo-envios-tiers th {
-	text-align: left;
+.woo-envios-tiers input:focus {
+  outline: none;
+  border-color: var(--we-primary);
+}
+
+/* ========================================
+   Buttons
+   ======================================== */
+.woo-envios-wrap .button {
+  padding: 10px 20px;
+  border-radius: var(--we-radius-sm);
+  font-size: 14px;
+  font-weight: 500;
+  transition: var(--we-transition);
+}
+
+.woo-envios-wrap .button-primary {
+  background: var(--we-primary);
+  border-color: var(--we-primary);
+  color: white;
+}
+
+.woo-envios-wrap .button-primary:hover {
+  background: var(--we-primary-hover);
+  border-color: var(--we-primary-hover);
+}
+
+/* ========================================
+   Debug Tools Section
+   ======================================== */
+.woo-envios-debug-tool {
+  padding: 20px;
+  background: var(--we-bg);
+  border-radius: var(--we-radius-sm);
+  margin-top: 16px;
+}
+
+.woo-envios-debug-tool h3 {
+  margin-top: 0;
+  font-size: 15px;
+}
+
+/* ========================================
+   Responsive
+   ======================================== */
+@media (max-width: 782px) {
+  .woo-envios-wrap {
+    padding: 12px;
+  }
+  
+  .woo-envios-card {
+    padding: 20px;
+  }
+  
+  .woo-envios-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .woo-envios-services-grid {
+    flex-direction: column;
+  }
+  
+  .woo-envios-services-grid label {
+    width: 100%;
+    box-sizing: border-box;
+  }
+}
+
+/* ========================================
+   Animations
+   ======================================== */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.woo-envios-card {
+  animation: fadeIn 0.3s ease;
+}
+
+/* ========================================
+   SuperFrete Section Custom Styles
+   ======================================== */
+.woo-envios-card[style*="00b894"] {
+  border-top: 3px solid var(--we-primary);
+}
+
+.woo-envios-card[style*="00b894"] h2 {
+  color: var(--we-primary);
+}
+
+/* Token input special styling */
+input[name="woo_envios_superfrete_token"] {
+  font-family: "Monaco", "Menlo", "Consolas", monospace;
+  font-size: 11px !important;
+  letter-spacing: 0.3px;
+}
+
+/* ========================================
+   Coordinate fields
+   ======================================== */
+.woo-envios-coords-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+/* ========================================
+   Save button area
+   ======================================== */
+.woo-envios-wrap .submit {
+  margin-top: 0;
+  padding-top: 24px;
+  border-top: 1px solid var(--we-border);
+}
+
+.woo-envios-wrap .submit .button-primary {
+  padding: 12px 32px;
+  font-size: 15px;
+  border-radius: var(--we-radius-sm);
 }
