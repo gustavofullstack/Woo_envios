@@ -78,6 +78,9 @@ final class Woo_Envios_Plugin {
 		// Load Geocoder AFTER Google Maps (Geocoder depends on Woo_Envios_Google_Maps)
 		require_once WOO_ENVIOS_PATH . 'includes/Services/Geocoder.php';
 		
+		// Load Correios service
+		require_once WOO_ENVIOS_PATH . 'includes/Services/class-woo-envios-correios.php';
+		
 		// Load remaining classes (some depend on Geocoder)
 		require_once WOO_ENVIOS_PATH . 'includes/class-woo-envios-google-maps-admin.php';
 		require_once WOO_ENVIOS_PATH . 'includes/class-woo-envios-weather.php';

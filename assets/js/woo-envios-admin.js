@@ -18,7 +18,30 @@
 		initTierControls();
 		initSearch();
 		initDebugTools();
+		initToggleSettings();
 	});
+
+	function initToggleSettings() {
+		// Dynamic Pricing toggle
+		const dynamicPricingCheckbox = document.querySelector('input[name="woo_envios_dynamic_pricing_enabled"]');
+		const dynamicPricingSettings = document.getElementById('dynamic-pricing-settings');
+		
+		if (dynamicPricingCheckbox && dynamicPricingSettings) {
+			dynamicPricingCheckbox.addEventListener('change', function() {
+				dynamicPricingSettings.style.display = this.checked ? '' : 'none';
+			});
+		}
+
+		// Correios toggle
+		const correiosCheckbox = document.querySelector('input[name="woo_envios_correios_enabled"]');
+		const correiosSettings = document.getElementById('correios-settings');
+		
+		if (correiosCheckbox && correiosSettings) {
+			correiosCheckbox.addEventListener('change', function() {
+				correiosSettings.style.display = this.checked ? '' : 'none';
+			});
+		}
+	}
 
 	function initMap() {
 		const mapEl = document.getElementById('woo-envios-admin-map');

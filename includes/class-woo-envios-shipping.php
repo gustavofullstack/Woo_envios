@@ -84,9 +84,10 @@ class Woo_Envios_Shipping_Method extends WC_Shipping_Method {
 		$signature      = $this->build_destination_signature( $package );
 		$session_coords = $this->get_session_coordinates( $signature );
 
-		// If no coordinates in session, we cannot calculate shipping.
-		// We do NOT fallback to synchronous geocoding here to prevent blocking.
+		// If no coordinates in session, try Correios directly based on CEP.
 		if ( empty( $session_coords ) ) {
+			// Try Correios as fallback when we can't geocode.
+			$this->calculate_correios_shipping( $package );
 			return;
 		}
 
@@ -108,8 +109,9 @@ class Woo_Envios_Shipping_Method extends WC_Shipping_Method {
 
 		$tier = Woo_Envios_Admin::match_tier_by_distance( $distance );
 		if ( ! $tier ) {
-			// Log for debugging: customer is outside delivery range
+			// Customer is outside local delivery range, try Correios.
 			Woo_Envios_Logger::distance_out_of_range( $distance, $package['destination'] );
+			$this->calculate_correios_shipping( $package );
 			return;
 		}
 
@@ -151,6 +153,39 @@ class Woo_Envios_Shipping_Method extends WC_Shipping_Method {
 			$store_coords,
 			$session_coords
 		);
+	}
+
+	/**
+	 * Calculate shipping via Correios for destinations outside local radius.
+	 *
+	 * @param array $package WooCommerce package.
+	 * @return void
+	 */
+	private function calculate_correios_shipping( array $package ): void {
+		// Check if Correios is enabled.
+		$correios = new \Woo_Envios\Services\Correios();
+		
+		if ( ! $correios->is_enabled() ) {
+			return;
+		}
+
+		$rates = $correios->calculate( $package );
+
+		if ( $rates && is_array( $rates ) ) {
+			foreach ( $rates as $rate_data ) {
+				$this->add_rate( array(
+					'id'        => $this->id . '_' . $rate_data['id'],
+					'label'     => 'Correios ' . $rate_data['label'],
+					'cost'      => $rate_data['cost'],
+					'package'   => $package,
+					'meta_data' => array(
+						'service_code' => $rate_data['code'] ?? '',
+						'deadline'     => $rate_data['deadline'] ?? 0,
+						'method'       => 'correios',
+					),
+				) );
+			}
+		}
 	}
 
 	/**
