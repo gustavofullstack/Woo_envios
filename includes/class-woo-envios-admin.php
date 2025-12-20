@@ -382,7 +382,7 @@ final class Woo_Envios_Admin {
 			'woo-envios-admin',
 			WOO_ENVIOS_ASSETS . 'css/admin.css',
 			array( 'leaflet' ),
-			Woo_Envios_Plugin::VERSION
+			'2.1.' . filemtime( WOO_ENVIOS_PATH . 'assets/css/admin.css' ) // Cache bust on file change
 		);
 
 		wp_enqueue_script(
