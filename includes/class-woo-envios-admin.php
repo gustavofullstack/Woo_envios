@@ -148,11 +148,29 @@ final class Woo_Envios_Admin {
 		$table_name = $wpdb->prefix . 'woo_envios_geocode_cache';
 		
 		// Check if table exists
-		if ( $wpdb->get_var( $wpdb->prepare( "SHOW TABLES LIKE %s", $table_name ) ) === $table_name ) {
+		$table_exists = $wpdb->get_var( $wpdb->prepare( "SHOW TABLES LIKE %s", $table_name ) ) === $table_name;
+		
+		if ( ! $table_exists ) {
+			// Create the table if it doesn't exist (self-healing)
+			$charset_collate = $wpdb->get_charset_collate();
+			$sql = "CREATE TABLE IF NOT EXISTS $table_name (
+				id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+				cache_key varchar(64) NOT NULL,
+				result_data longtext NOT NULL,
+				created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				expires_at datetime NOT NULL,
+				PRIMARY KEY  (id),
+				UNIQUE KEY cache_key (cache_key),
+				KEY expires_at (expires_at)
+			) $charset_collate;";
+
+			require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+			dbDelta( $sql );
+			
+			wp_send_json_success( 'Tabela de cache criada. Nenhum cache para limpar.' );
+		} else {
 			$wpdb->query( "TRUNCATE TABLE $table_name" );
 			wp_send_json_success( 'Cache limpo com sucesso.' );
-		} else {
-			wp_send_json_error( 'Tabela de cache não encontrada.' );
 		}
 	}
 

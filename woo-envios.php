@@ -93,6 +93,9 @@ final class Woo_Envios_Plugin {
 	 * Inicializa componentes.
 	 */
 	private function load_components(): void {
+		// Self-healing: ensure cache table exists (fixes issue when plugin was updated without reactivation)
+		$this->maybe_create_cache_table();
+		
 		// Initialize Google Maps.
 		$google_maps = new Woo_Envios_Google_Maps();
 		
@@ -194,6 +197,22 @@ final class Woo_Envios_Plugin {
 
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 		dbDelta( $sql );
+	}
+
+	/**
+	 * Check if cache table exists and create if missing (self-healing).
+	 */
+	private function maybe_create_cache_table(): void {
+		global $wpdb;
+
+		$table_name = $wpdb->prefix . 'woo_envios_geocode_cache';
+
+		// Check if table exists
+		$table_exists = $wpdb->get_var( $wpdb->prepare( "SHOW TABLES LIKE %s", $table_name ) ) === $table_name;
+
+		if ( ! $table_exists ) {
+			$this->create_google_cache_table();
+		}
 	}
 }
 
