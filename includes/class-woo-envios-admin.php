@@ -44,9 +44,6 @@ final class Woo_Envios_Admin {
 	 * AJAX: Testa geocodificação e cálculo de distância.
 	 */
 	public function ajax_debug_geocode(): void {
-		// Log entry
-		error_log( 'Woo Envios Debug: ajax_debug_geocode called' );
-		
 		check_ajax_referer( 'woo_envios_debug_nonce', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
@@ -91,13 +88,10 @@ final class Woo_Envios_Admin {
 			$distance_data = $google_maps->calculate_distance( $origin, $destination );
 			
 			if ( ! is_wp_error( $distance_data ) && ! empty( $distance_data ) ) {
-				// Use real route distance
 				$distance = round( $distance_data['distance_value'] / 1000, 2 );
 				$distance_method = 'Google Maps (rota real)';
 			} else {
-				// Log the error if it failed
 				if ( is_wp_error( $distance_data ) ) {
-					error_log( 'Woo Envios Debug Error: ' . $distance_data->get_error_message() );
 					$distance_method = 'Haversine (fallback - Erro API: ' . $distance_data->get_error_message() . ')';
 				}
 			}
@@ -124,14 +118,264 @@ final class Woo_Envios_Admin {
 
 		// Check tier
 		$tier = self::match_tier_by_distance( $distance );
-
-		wp_send_json_success( array(
+		
+		// Build response
+		$response = array(
 			'coords'          => $coords,
 			'store'           => $store,
 			'distance'        => $distance,
 			'distance_method' => $distance_method,
 			'tier'            => $tier,
-		) );
+		);
+
+		// If INSIDE radius, add dynamic pricing info
+		if ( $tier ) {
+			$base_price = (float) $tier['price'];
+			$multipliers = $this->calculate_debug_multipliers();
+			$final_price = $base_price * $multipliers['total'];
+			
+			$response['pricing'] = array(
+				'base_price'    => $base_price,
+				'final_price'   => round( $final_price, 2 ),
+				'multiplier'    => $multipliers['total'],
+				'breakdown'     => $multipliers['breakdown'],
+				'is_peak_hour'  => $multipliers['is_peak'],
+				'is_weekend'    => $multipliers['is_weekend'],
+				'weather'       => $multipliers['weather'],
+			);
+		} else {
+			// If OUTSIDE radius, get SuperFrete quotes
+			$superfrete_quotes = $this->get_superfrete_debug_quotes( $address, $geocode_result );
+			if ( ! empty( $superfrete_quotes ) ) {
+				$response['superfrete'] = $superfrete_quotes;
+			}
+		}
+
+		wp_send_json_success( $response );
+	}
+
+	/**
+	 * Calculate dynamic pricing multipliers for debug.
+	 *
+	 * @return array
+	 */
+	private function calculate_debug_multipliers(): array {
+		$total = 1.0;
+		$breakdown = array();
+		$is_peak = false;
+		$is_weekend = false;
+		$weather = 'normal';
+
+		// Check if dynamic pricing is enabled
+		if ( ! get_option( 'woo_envios_dynamic_pricing_enabled', false ) ) {
+			return array(
+				'total'      => 1.0,
+				'breakdown'  => array( 'Precificação dinâmica desativada' ),
+				'is_peak'    => false,
+				'is_weekend' => false,
+				'weather'    => 'disabled',
+			);
+		}
+
+		// Weekend check
+		$day_of_week = (int) current_time( 'N' );
+		if ( $day_of_week >= 6 ) {
+			$is_weekend = true;
+			$weekend_mult = (float) get_option( 'woo_envios_weekend_multiplier', 1.1 );
+			if ( $weekend_mult > 1 ) {
+				$total *= $weekend_mult;
+				$breakdown[] = sprintf( '🗓️ Fim de semana: x%.2f', $weekend_mult );
+			}
+		}
+
+		// Peak hours check
+		$current_hour = (int) current_time( 'G' );
+		$current_minute = (int) current_time( 'i' );
+		$current_time_decimal = $current_hour + ( $current_minute / 60 );
+		
+		$peak_hours = get_option( 'woo_envios_peak_hours', array() );
+		if ( is_array( $peak_hours ) ) {
+			foreach ( $peak_hours as $period ) {
+				if ( empty( $period['start'] ) || empty( $period['end'] ) ) {
+					continue;
+				}
+				
+				$start_parts = explode( ':', $period['start'] );
+				$end_parts = explode( ':', $period['end'] );
+				
+				$start_decimal = (int) $start_parts[0] + ( (int) ( $start_parts[1] ?? 0 ) / 60 );
+				$end_decimal = (int) $end_parts[0] + ( (int) ( $end_parts[1] ?? 0 ) / 60 );
+				
+				if ( $current_time_decimal >= $start_decimal && $current_time_decimal <= $end_decimal ) {
+					$is_peak = true;
+					$peak_mult = (float) ( $period['multiplier'] ?? 1.0 );
+					if ( $peak_mult > 1 ) {
+						$total *= $peak_mult;
+						$period_name = $period['label'] ?? 'Pico';
+						$breakdown[] = sprintf( '⏰ %s (%s-%s): x%.2f', $period_name, $period['start'], $period['end'], $peak_mult );
+					}
+					break;
+				}
+			}
+		}
+
+		// Weather check
+		$weather_api_key = get_option( 'woo_envios_openweather_api_key', '' );
+		if ( ! empty( $weather_api_key ) ) {
+			$store = self::get_store_coordinates();
+			$weather_data = $this->check_weather_conditions( $store['lat'], $store['lng'], $weather_api_key );
+			
+			if ( $weather_data && ! empty( $weather_data['condition'] ) ) {
+				$weather = $weather_data['condition'];
+				if ( $weather_data['condition'] === 'rain_light' ) {
+					$rain_mult = (float) get_option( 'woo_envios_rain_light_multiplier', 1.1 );
+					if ( $rain_mult > 1 ) {
+						$total *= $rain_mult;
+						$breakdown[] = sprintf( '🌧️ Chuva leve: x%.2f', $rain_mult );
+					}
+				} elseif ( $weather_data['condition'] === 'rain_heavy' ) {
+					$rain_mult = (float) get_option( 'woo_envios_rain_heavy_multiplier', 1.2 );
+					if ( $rain_mult > 1 ) {
+						$total *= $rain_mult;
+						$breakdown[] = sprintf( '⛈️ Chuva forte: x%.2f', $rain_mult );
+					}
+				}
+			}
+		}
+
+		// Apply max multiplier cap
+		$max_mult = (float) get_option( 'woo_envios_max_multiplier', 2.0 );
+		if ( $total > $max_mult ) {
+			$breakdown[] = sprintf( '🔒 Limite máximo aplicado: x%.2f → x%.2f', $total, $max_mult );
+			$total = $max_mult;
+		}
+
+		if ( empty( $breakdown ) ) {
+			$breakdown[] = '✅ Sem multiplicadores ativos';
+		}
+
+		return array(
+			'total'      => round( $total, 2 ),
+			'breakdown'  => $breakdown,
+			'is_peak'    => $is_peak,
+			'is_weekend' => $is_weekend,
+			'weather'    => $weather,
+		);
+	}
+
+	/**
+	 * Check weather conditions.
+	 *
+	 * @param float  $lat Latitude.
+	 * @param float  $lng Longitude.
+	 * @param string $api_key OpenWeather API key.
+	 * @return array|null
+	 */
+	private function check_weather_conditions( float $lat, float $lng, string $api_key ): ?array {
+		$cache_key = 'woo_envios_weather_' . md5( $lat . $lng );
+		$cached = get_transient( $cache_key );
+		
+		if ( $cached !== false ) {
+			return $cached;
+		}
+
+		$url = sprintf(
+			'https://api.openweathermap.org/data/2.5/weather?lat=%s&lon=%s&appid=%s',
+			$lat,
+			$lng,
+			$api_key
+		);
+
+		$response = wp_remote_get( $url, array( 'timeout' => 5 ) );
+		
+		if ( is_wp_error( $response ) ) {
+			return null;
+		}
+
+		$data = json_decode( wp_remote_retrieve_body( $response ), true );
+		
+		if ( empty( $data['weather'][0]['main'] ) ) {
+			return null;
+		}
+
+		$weather_main = strtolower( $data['weather'][0]['main'] );
+		$condition = 'normal';
+
+		if ( in_array( $weather_main, array( 'rain', 'drizzle', 'thunderstorm' ), true ) ) {
+			// Check precipitation intensity
+			$rain_1h = $data['rain']['1h'] ?? 0;
+			$condition = $rain_1h > 5 ? 'rain_heavy' : 'rain_light';
+		}
+
+		$result = array(
+			'condition'   => $condition,
+			'description' => $data['weather'][0]['description'] ?? '',
+			'temp'        => isset( $data['main']['temp'] ) ? round( $data['main']['temp'] - 273.15, 1 ) : null,
+		);
+
+		set_transient( $cache_key, $result, 15 * MINUTE_IN_SECONDS );
+		
+		return $result;
+	}
+
+	/**
+	 * Get SuperFrete quotes for debug.
+	 *
+	 * @param string $address Address.
+	 * @param array  $geocode_result Geocode result with postal_code.
+	 * @return array
+	 */
+	private function get_superfrete_debug_quotes( string $address, array $geocode_result ): array {
+		// Try to extract CEP from address or geocode result
+		$destination_cep = '';
+		
+		// Try to extract from address
+		if ( preg_match( '/(\d{5})-?(\d{3})/', $address, $matches ) ) {
+			$destination_cep = $matches[1] . $matches[2];
+		} elseif ( ! empty( $geocode_result['postal_code'] ) ) {
+			$destination_cep = preg_replace( '/\D/', '', $geocode_result['postal_code'] );
+		}
+
+		if ( empty( $destination_cep ) || strlen( $destination_cep ) !== 8 ) {
+			return array( 'error' => 'CEP não encontrado no endereço. Inclua o CEP para ver cotações.' );
+		}
+
+		// Call SuperFrete API
+		$correios = new \Woo_Envios\Services\Woo_Envios_Correios();
+		
+		if ( ! $correios->is_enabled() ) {
+			return array( 'error' => 'SuperFrete não configurado. Configure o token nas configurações.' );
+		}
+
+		// Default package dimensions for testing
+		$rates = $correios->calculate(
+			$destination_cep,
+			1.0, // 1kg
+			array( 'height' => 10, 'width' => 15, 'length' => 20 ),
+			100 // R$ 100 cart value
+		);
+
+		if ( empty( $rates ) || is_wp_error( $rates ) ) {
+			$error_msg = is_wp_error( $rates ) ? $rates->get_error_message() : 'Nenhuma cotação retornada';
+			return array( 'error' => 'Erro SuperFrete: ' . $error_msg );
+		}
+
+		// Format for display
+		$formatted = array();
+		foreach ( $rates as $rate ) {
+			$formatted[] = array(
+				'service'  => $rate['label'] ?? $rate['name'] ?? 'Serviço',
+				'price'    => $rate['cost'] ?? $rate['price'] ?? 0,
+				'days'     => $rate['delivery_time'] ?? $rate['days'] ?? '?',
+				'company'  => $rate['company'] ?? 'Correios',
+			);
+		}
+
+		return array(
+			'destination_cep' => $destination_cep,
+			'quotes'          => $formatted,
+			'package_info'    => 'Pacote teste: 1kg, 10x15x20cm, R$100',
+		);
 	}
 
 	/**

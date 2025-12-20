@@ -25,9 +25,9 @@
 		// Dynamic Pricing toggle
 		const dynamicPricingCheckbox = document.querySelector('input[name="woo_envios_dynamic_pricing_enabled"]');
 		const dynamicPricingSettings = document.getElementById('dynamic-pricing-settings');
-		
+
 		if (dynamicPricingCheckbox && dynamicPricingSettings) {
-			dynamicPricingCheckbox.addEventListener('change', function() {
+			dynamicPricingCheckbox.addEventListener('change', function () {
 				dynamicPricingSettings.style.display = this.checked ? '' : 'none';
 			});
 		}
@@ -35,9 +35,9 @@
 		// Correios toggle
 		const correiosCheckbox = document.querySelector('input[name="woo_envios_correios_enabled"]');
 		const correiosSettings = document.getElementById('correios-settings');
-		
+
 		if (correiosCheckbox && correiosSettings) {
-			correiosCheckbox.addEventListener('change', function() {
+			correiosCheckbox.addEventListener('change', function () {
 				correiosSettings.style.display = this.checked ? '' : 'none';
 			});
 		}
@@ -309,13 +309,76 @@
 
 						if (response.success) {
 							const r = response.data;
-							debugResults.innerHTML = `
+							let html = `
 								<p><strong>📍 Coordenadas Encontradas:</strong> ${r.coords.lat}, ${r.coords.lng}</p>
 								<p><strong>🏬 Loja Configurada:</strong> ${r.store.lat}, ${r.store.lng}</p>
 								<p><strong>📏 Distância Calculada:</strong> ${r.distance} km <em>(${r.distance_method})</em></p>
 								<p><strong>💰 Faixa Detectada:</strong> ${r.tier ? r.tier.label + ' (R$ ' + r.tier.price + ')' : 'Nenhuma (Fora da área)'}</p>
-								<p><a href="https://www.google.com/maps/dir/?api=1&origin=${r.store.lat},${r.store.lng}&destination=${r.coords.lat},${r.coords.lng}" target="_blank" class="button">Ver Rota no Maps</a></p>
 							`;
+
+							// Show pricing info if inside radius
+							if (r.pricing) {
+								html += `
+									<div style="background: #e8f5e9; padding: 12px; border-radius: 8px; margin: 12px 0;">
+										<h4 style="margin-top: 0;">💰 Precificação Dinâmica</h4>
+										<p><strong>Preço Base:</strong> R$ ${r.pricing.base_price.toFixed(2)}</p>
+										<p><strong>Multiplicador:</strong> x${r.pricing.multiplier}</p>
+										<p><strong>Preço Final:</strong> R$ ${r.pricing.final_price.toFixed(2)}</p>
+										<p><strong>Detalhes:</strong></p>
+										<ul style="margin: 0; padding-left: 20px;">
+											${r.pricing.breakdown.map(item => `<li>${item}</li>`).join('')}
+										</ul>
+										<p style="margin-bottom: 0;">
+											<strong>Status:</strong>
+											${r.pricing.is_weekend ? '🗓️ Fim de semana' : '📅 Dia útil'} |
+											${r.pricing.is_peak_hour ? '⏰ Horário de pico' : '🕐 Horário normal'} |
+											${r.pricing.weather === 'rain_heavy' ? '⛈️ Chuva forte' : r.pricing.weather === 'rain_light' ? '🌧️ Chuva leve' : '☀️ Tempo bom'}
+										</p>
+									</div>
+								`;
+							}
+
+							// Show SuperFrete quotes if outside radius
+							if (r.superfrete) {
+								if (r.superfrete.error) {
+									html += `
+										<div style="background: #fff3e0; padding: 12px; border-radius: 8px; margin: 12px 0;">
+											<h4 style="margin-top: 0;">📦 SuperFrete</h4>
+											<p style="color: #e65100; margin-bottom: 0;">⚠️ ${r.superfrete.error}</p>
+										</div>
+									`;
+								} else {
+									html += `
+										<div style="background: #e3f2fd; padding: 12px; border-radius: 8px; margin: 12px 0;">
+											<h4 style="margin-top: 0;">📦 Cotações SuperFrete</h4>
+											<p><strong>CEP Destino:</strong> ${r.superfrete.destination_cep}</p>
+											<p><strong>Pacote:</strong> ${r.superfrete.package_info}</p>
+											<table style="width: 100%; border-collapse: collapse; margin-top: 8px;">
+												<thead>
+													<tr style="background: #1976d2; color: white;">
+														<th style="padding: 8px; text-align: left;">Serviço</th>
+														<th style="padding: 8px; text-align: right;">Preço</th>
+														<th style="padding: 8px; text-align: center;">Prazo</th>
+													</tr>
+												</thead>
+												<tbody>
+													${r.superfrete.quotes.map(q => `
+														<tr style="border-bottom: 1px solid #ddd;">
+															<td style="padding: 8px;">${q.service}</td>
+															<td style="padding: 8px; text-align: right; font-weight: bold;">R$ ${parseFloat(q.price).toFixed(2)}</td>
+															<td style="padding: 8px; text-align: center;">${q.days} dias</td>
+														</tr>
+													`).join('')}
+												</tbody>
+											</table>
+										</div>
+									`;
+								}
+							}
+
+							html += `<p><a href="https://www.google.com/maps/dir/?api=1&origin=${r.store.lat},${r.store.lng}&destination=${r.coords.lat},${r.coords.lng}" target="_blank" class="button">Ver Rota no Maps</a></p>`;
+
+							debugResults.innerHTML = html;
 						} else {
 							let errorMsg = response.data;
 							if (typeof errorMsg === 'object') {
