@@ -2,6 +2,22 @@
 
 Todas as mudanças notáveis deste projeto são documentadas aqui.
 
+## [3.1.21] - 2024-12-20
+
+### ✨ Novidades
+- **UI Admin Modernizada** - Design minimalista com cards, sombras e animações
+- **SuperFrete Integrado** - Cotações PAC/SEDEX/Mini em tempo real
+
+### 🐛 Correções
+- **Bug Crítico** - Checkboxes de serviços agora salvam corretamente
+- Função `sanitize_superfrete_services()` processa arrays
+
+### 📦 Melhorias
+- Release notes automáticas do CHANGELOG.md
+- Arquivos de teste excluídos do build
+
+---
+
 ## [3.1.20] - 2024-12-20
 
 ### ✨ Novidades
