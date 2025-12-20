@@ -78,18 +78,38 @@ jobs:
         mkdir -p build/woo-envios
         
         # Copy files to build dir, excluding unwanted
-        rsync -av --progress . build/woo-envios --exclude .git --exclude .github --exclude build --exclude composer.json --exclude composer.lock --exclude .gitignore
+        rsync -av --progress . build/woo-envios --exclude .git --exclude .github --exclude build --exclude composer.json --exclude composer.lock --exclude .gitignore --exclude test-*.php
         
         # Zip it
         cd build
         zip -r ../woo-envios.zip woo-envios
 
+    - name: Extract Changelog for Version
+      id: changelog
+      run: |
+        VERSION="${{ steps.bump_version.outputs.new_version }}"
+        
+        # Extract the section for this version from CHANGELOG.md
+        if [ -f "CHANGELOG.md" ]; then
+          # Use awk to extract the section for the latest version
+          NOTES=$(awk '/^## \[/{if(found) exit; found=1} found{print}' CHANGELOG.md | tail -n +2)
+          
+          if [ -z "$NOTES" ]; then
+            printf "🚀 Release v%s\n\n📦 **Novidades desta versão:**\n- Melhorias gerais e correções de bugs\n- Veja o CHANGELOG.md para detalhes completos\n" "$VERSION" > release_notes.txt
+          else
+            echo "$NOTES" > release_notes.txt
+          fi
+        else
+          echo "🚀 Release v${VERSION}" > release_notes.txt
+        fi
+
+
     - name: Create Release
       uses: ncipollo/release-action@v1
       with:
         tag: v${{ steps.bump_version.outputs.new_version }}
-        name: Release v${{ steps.bump_version.outputs.new_version }}
+        name: "🚀 Release v${{ steps.bump_version.outputs.new_version }}"
         artifacts: "woo-envios.zip"
         token: ${{ secrets.GITHUB_TOKEN }}
-        body: "Automated release of version v${{ steps.bump_version.outputs.new_version }}"
+        bodyFile: release_notes.txt
         makeLatest: true
