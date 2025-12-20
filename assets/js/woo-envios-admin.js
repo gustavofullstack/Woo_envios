@@ -32,13 +32,13 @@
 			});
 		}
 
-		// Correios toggle
-		const correiosCheckbox = document.querySelector('input[name="woo_envios_correios_enabled"]');
-		const correiosSettings = document.getElementById('correios-settings');
+		// SuperFrete toggle
+		const superfreteCheckbox = document.querySelector('input[name="woo_envios_superfrete_enabled"]');
+		const superfreteSettings = document.getElementById('superfrete-settings');
 
-		if (correiosCheckbox && correiosSettings) {
-			correiosCheckbox.addEventListener('change', function () {
-				correiosSettings.style.display = this.checked ? '' : 'none';
+		if (superfreteCheckbox && superfreteSettings) {
+			superfreteCheckbox.addEventListener('change', function () {
+				superfreteSettings.style.display = this.checked ? '' : 'none';
 			});
 		}
 	}

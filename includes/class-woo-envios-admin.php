@@ -38,6 +38,44 @@ final class Woo_Envios_Admin {
 		// AJAX Debug Tools
 		add_action( 'wp_ajax_woo_envios_debug_geocode', array( $this, 'ajax_debug_geocode' ) );
 		add_action( 'wp_ajax_woo_envios_clear_cache', array( $this, 'ajax_clear_cache' ) );
+
+		// Handle checkbox arrays - they need special processing because unchecked boxes aren't sent
+		add_filter( 'pre_update_option_woo_envios_superfrete_services', array( $this, 'handle_services_save' ), 10, 2 );
+	}
+
+	/**
+	 * Handle services checkbox save - ensure array is properly saved.
+	 *
+	 * @param mixed $value New value.
+	 * @param mixed $old_value Old value.
+	 * @return array
+	 */
+	public function handle_services_save( $value, $old_value ): array {
+		// Check if the services section was submitted (hidden field present)
+		$form_submitted = isset( $_POST['woo_envios_superfrete_services_submitted'] );
+		
+		// If empty or not array
+		if ( empty( $value ) || ! is_array( $value ) ) {
+			// If form was submitted with no services checked, return empty array
+			if ( $form_submitted ) {
+				return array();
+			}
+			// Otherwise keep old value or default
+			return is_array( $old_value ) ? $old_value : array( '1', '2' );
+		}
+
+		// Sanitize and validate
+		$valid_services = array( '1', '2', '17', '3', '31' );
+		$sanitized = array();
+
+		foreach ( $value as $service ) {
+			$service = sanitize_text_field( $service );
+			if ( in_array( $service, $valid_services, true ) ) {
+				$sanitized[] = $service;
+			}
+		}
+
+		return $sanitized;
 	}
 
 	/**
@@ -329,15 +367,18 @@ final class Woo_Envios_Admin {
 		// Try to extract CEP from address or geocode result
 		$destination_cep = '';
 		
-		// Try to extract from address
+		// Try to extract from address first
 		if ( preg_match( '/(\d{5})-?(\d{3})/', $address, $matches ) ) {
 			$destination_cep = $matches[1] . $matches[2];
-		} elseif ( ! empty( $geocode_result['postal_code'] ) ) {
-			$destination_cep = preg_replace( '/\D/', '', $geocode_result['postal_code'] );
+		}
+		
+		// If not found in address, try from geocode result (Google returns in address_components)
+		if ( empty( $destination_cep ) && ! empty( $geocode_result['address_components']['postal_code'] ) ) {
+			$destination_cep = preg_replace( '/\D/', '', $geocode_result['address_components']['postal_code'] );
 		}
 
 		if ( empty( $destination_cep ) || strlen( $destination_cep ) !== 8 ) {
-			return array( 'error' => 'CEP não encontrado no endereço. Inclua o CEP para ver cotações.' );
+			return array( 'error' => 'CEP não encontrado. Google não retornou CEP para este endereço. Tente incluir o CEP no endereço (ex: "Rua X, 123 - 01310-100").' );
 		}
 
 		// Call SuperFrete API
@@ -1039,6 +1080,7 @@ final class Woo_Envios_Admin {
 							$active_services = array( '1', '2' );
 						}
 						?>
+												<input type="hidden" name="woo_envios_superfrete_services_submitted" value="1" />
 						<div class="woo-envios-services-grid">
 							<?php foreach ( $available_services as $code => $service ) : ?>
 								<label>
