@@ -80,6 +80,7 @@ final class Woo_Envios_Plugin {
 		
 		// Load shipping service (SuperFrete)
 		require_once WOO_ENVIOS_PATH . 'includes/Services/class-woo-envios-correios.php';
+		require_once WOO_ENVIOS_PATH . 'includes/Services/class-woo-envios-superfrete-shipping-method.php';
 		
 		// Load remaining classes (some depend on Geocoder)
 		require_once WOO_ENVIOS_PATH . 'includes/class-woo-envios-google-maps-admin.php';
@@ -157,7 +158,12 @@ final class Woo_Envios_Plugin {
 	 * @return array
 	 */
 	public function register_shipping_method( array $methods ): array {
+		// Local delivery by radius (Flash)
 		$methods['woo_envios_radius'] = 'Woo_Envios_Shipping_Method';
+		
+		// SuperFrete (PAC/SEDEX/Mini) for customers outside radius
+		$methods['woo_envios_superfrete'] = 'Woo_Envios\Services\Woo_Envios_Superfrete_Shipping_Method';
+		
 		return $methods;
 	}
 

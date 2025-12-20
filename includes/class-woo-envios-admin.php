@@ -402,7 +402,7 @@ final class Woo_Envios_Admin {
 			$formatted[] = array(
 				'service'  => $rate['label'] ?? $rate['name'] ?? 'Serviço',
 				'price'    => $rate['cost'] ?? $rate['price'] ?? 0,
-				'days'     => $rate['delivery_time'] ?? $rate['days'] ?? '?',
+				'days'     => $rate['deadline'] ?? $rate['delivery_time'] ?? $rate['days'] ?? '?',
 				'company'  => $rate['company'] ?? 'Correios',
 			);
 		}
