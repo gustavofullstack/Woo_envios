@@ -243,7 +243,13 @@ class Correios {
 	}
 
 	/**
-	 * Call Correios SOAP API.
+	 * Call Correios API.
+	 * 
+	 * NOTE: The legacy SOAP WebService (ws.correios.com.br) was deprecated on August 31, 2023.
+	 * The new REST API requires a contract and credentials from Correios.
+	 * 
+	 * For now, we use contingency rates (fixed regional pricing) as a reliable fallback.
+	 * Users with Correios contracts can configure the new REST API credentials.
 	 *
 	 * @param string $cep_destino Destination CEP.
 	 * @param float  $weight      Package weight in kg.
@@ -251,9 +257,20 @@ class Correios {
 	 * @return object|\WP_Error API response or error.
 	 */
 	private function call_correios_api( string $cep_destino, float $weight, array $dimensions ) {
-		// Check if SOAP extension is available.
+		// Check if we have new REST API credentials configured
+		if ( ! empty( $this->contract_code ) && ! empty( $this->contract_password ) ) {
+			// Try the new REST API (requires contract)
+			$result = $this->call_correios_rest_api( $cep_destino, $weight, $dimensions );
+			if ( ! is_wp_error( $result ) ) {
+				return $result;
+			}
+			// Log the REST API error but continue to try legacy as fallback
+			$this->log_error( 'REST API error: ' . $result->get_error_message() . ' - Tentando API legada...' );
+		}
+
+		// Try legacy SOAP API (may not work - deprecated August 2023)
 		if ( ! class_exists( 'SoapClient' ) ) {
-			return new \WP_Error( 'soap_not_available', 'Extensão SOAP não está disponível no servidor.' );
+			return new \WP_Error( 'soap_not_available', 'Extensão SOAP não está disponível e credenciais REST não configuradas.' );
 		}
 
 		try {
@@ -291,10 +308,123 @@ class Correios {
 			return new \WP_Error( 'invalid_response', 'Resposta inválida da API dos Correios.' );
 
 		} catch ( \SoapFault $e ) {
-			return new \WP_Error( 'soap_fault', $e->getMessage() );
+			return new \WP_Error( 'soap_fault', 'API Correios indisponível (WebService SOAP foi descontinuado em 2023). Usando tabela de preços.' );
 		} catch ( \Exception $e ) {
 			return new \WP_Error( 'correios_error', $e->getMessage() );
 		}
+	}
+
+	/**
+	 * Call the new Correios REST API (requires contract).
+	 *
+	 * @param string $cep_destino Destination CEP.
+	 * @param float  $weight      Package weight in kg.
+	 * @param array  $dimensions  Package dimensions.
+	 * @return object|\WP_Error API response or error.
+	 */
+	private function call_correios_rest_api( string $cep_destino, float $weight, array $dimensions ) {
+		// New Correios REST API endpoint
+		$api_url = 'https://cws.correios.com.br/preco-prazo/v1/preco';
+		
+		// First, get authorization token
+		$token = $this->get_correios_auth_token();
+		if ( is_wp_error( $token ) ) {
+			return $token;
+		}
+
+		$body = array(
+			'cepOrigem'    => $this->origin_cep,
+			'cepDestino'   => $cep_destino,
+			'psObjeto'     => (int) ( $weight * 1000 ), // Weight in grams
+			'comprimento'  => (int) $dimensions['length'],
+			'altura'       => (int) $dimensions['height'],
+			'largura'      => (int) $dimensions['width'],
+			'tpObjeto'     => 2, // 2 = Pacote/Caixa
+		);
+
+		$services_result = array();
+
+		foreach ( $this->services as $service_code ) {
+			$body['coProduto'] = $service_code;
+
+			$response = wp_remote_post( $api_url, array(
+				'timeout' => 5,
+				'headers' => array(
+					'Authorization' => 'Bearer ' . $token,
+					'Content-Type'  => 'application/json',
+					'Accept'        => 'application/json',
+				),
+				'body'    => wp_json_encode( $body ),
+			) );
+
+			if ( is_wp_error( $response ) ) {
+				continue;
+			}
+
+			$status = wp_remote_retrieve_response_code( $response );
+			if ( $status !== 200 ) {
+				continue;
+			}
+
+			$data = json_decode( wp_remote_retrieve_body( $response ) );
+			if ( ! empty( $data ) && isset( $data->pcFinal ) ) {
+				$services_result[] = (object) array(
+					'Codigo'        => $service_code,
+					'Valor'         => number_format( $data->pcFinal, 2, ',', '.' ),
+					'PrazoEntrega'  => $data->prazoEntrega ?? 0,
+					'Erro'          => '0',
+					'MsgErro'       => '',
+				);
+			}
+		}
+
+		if ( empty( $services_result ) ) {
+			return new \WP_Error( 'rest_api_failed', 'Nenhum serviço retornou preço válido.' );
+		}
+
+		return $services_result;
+	}
+
+	/**
+	 * Get Correios API authorization token.
+	 *
+	 * @return string|\WP_Error Token or error.
+	 */
+	private function get_correios_auth_token() {
+		// Check cached token
+		$cached_token = get_transient( 'woo_envios_correios_token' );
+		if ( ! empty( $cached_token ) ) {
+			return $cached_token;
+		}
+
+		$auth_url = 'https://cws.correios.com.br/token/v1/autentica';
+		
+		$response = wp_remote_post( $auth_url, array(
+			'timeout' => 5,
+			'headers' => array(
+				'Authorization' => 'Basic ' . base64_encode( $this->contract_code . ':' . $this->contract_password ),
+				'Content-Type'  => 'application/json',
+			),
+		) );
+
+		if ( is_wp_error( $response ) ) {
+			return $response;
+		}
+
+		$status = wp_remote_retrieve_response_code( $response );
+		if ( $status !== 200 && $status !== 201 ) {
+			return new \WP_Error( 'auth_failed', 'Falha na autenticação com Correios. Verifique suas credenciais.' );
+		}
+
+		$data = json_decode( wp_remote_retrieve_body( $response ) );
+		if ( empty( $data->token ) ) {
+			return new \WP_Error( 'no_token', 'Token não retornado pela API dos Correios.' );
+		}
+
+		// Cache token for 5 hours (tokens are valid for ~6 hours)
+		set_transient( 'woo_envios_correios_token', $data->token, 5 * 3600 ); // 5 hours
+
+		return $data->token;
 	}
 
 	/**
