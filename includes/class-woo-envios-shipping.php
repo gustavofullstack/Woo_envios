@@ -108,10 +108,14 @@ class Woo_Envios_Shipping_Method extends WC_Shipping_Method {
 		}
 
 		$tier = Woo_Envios_Admin::match_tier_by_distance( $distance );
+	
+		// ALWAYS calculate Correios as an option (SuperFrete/PAC/SEDEX)
+		// This allows customers to choose between Flash and Correios
+		$this->calculate_correios_shipping( $package );
+		
+		// If customer is outside local delivery range, don't add Flash option
 		if ( ! $tier ) {
-			// Customer is outside local delivery range, try Correios.
 			Woo_Envios_Logger::distance_out_of_range( $distance, $package['destination'] );
-			$this->calculate_correios_shipping( $package );
 			return;
 		}
 
