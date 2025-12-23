@@ -1,6 +1,14 @@
 ## [3.1.31] - 2025-12-23
 
 
+## [3.1.33] - 2025-12-23
+
+0c61d66 - feat: add initial WooCommerce shipping plugin
+945bb1a - docs: update CHANGELOG.md for v3.1.32 [skip ci]
+
+---
+
+
 ## [3.1.32] - 2025-12-23
 
 4bf3d38 - test: dispara workflow para testar changelog AI
