@@ -1,6 +1,14 @@
 ## [3.1.31] - 2025-12-23
 
 
+## [3.1.37] - 2025-12-23
+
+f614c37 - Fix: JavaScript syntax error in woo-envios-checkout.js
+2d57464 - docs: update CHANGELOG.md for v3.1.36 [skip ci]
+
+---
+
+
 ## [3.1.36] - 2025-12-23
 
 897f97a - Debug: Add comprehensive logging to diagnose missing Flash delivery
