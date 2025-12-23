@@ -1,6 +1,14 @@
 ## [3.1.31] - 2025-12-23
 
 
+## [3.2.3] - 2025-12-23
+
+64a820e - Fix: Critical - Require Geocoder manually. Bump v3.2.2
+69a1768 - docs: update CHANGELOG.md for v3.2.2 [skip ci]
+
+---
+
+
 ## [3.2.2] - 2025-12-23
 
 8878c22 - Fix: Update plugin-update.json and internal version constant to 3.2.0
