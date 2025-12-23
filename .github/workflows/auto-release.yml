@@ -16,9 +16,8 @@ jobs:
   build-and-release:
     runs-on: ubuntu-latest
     
-    # Needs permissions to push to main
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
         token: ${{ secrets.GITHUB_TOKEN }}
@@ -35,7 +34,6 @@ jobs:
     - name: Get Current Version
       id: version
       run: |
-        # Extract version from woo-envios.php
         VERSION=$(grep "Version:" woo-envios.php | awk '{print $3}')
         echo "Current version: $VERSION"
         echo "CURRENT_VERSION=$VERSION" >> $GITHUB_ENV
@@ -43,7 +41,6 @@ jobs:
     - name: Bump Version
       id: bump_version
       run: |
-        # Simple patch version bump logic
         IFS='.' read -ra VERSION_PARTS <<< "$CURRENT_VERSION"
         MAJOR=${VERSION_PARTS[0]}
         MINOR=${VERSION_PARTS[1]}
@@ -54,17 +51,138 @@ jobs:
         echo "Bumping to: $NEW_VERSION"
         echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
         
-        # Update header
         sed -i "s/Version: $CURRENT_VERSION/Version: $NEW_VERSION/" woo-envios.php
-        # Update constant if exists
         sed -i "s/const VERSION = '$CURRENT_VERSION';/const VERSION = '$NEW_VERSION';/" woo-envios.php
+
+    - name: Get Commits Since Last Tag
+      id: commits
+      run: |
+        # Get the last tag
+        LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+        
+        if [ -z "$LAST_TAG" ]; then
+          # No previous tag, get last 10 commits
+          COMMITS=$(git log --pretty=format:"- %s" -n 10)
+        else
+          # Get commits since last tag
+          COMMITS=$(git log ${LAST_TAG}..HEAD --pretty=format:"- %s" --no-merges)
+        fi
+        
+        # Save commits to file for DeepSeek
+        echo "$COMMITS" > commits.txt
+        cat commits.txt
+        
+        # Export for later steps
+        echo "LAST_TAG=$LAST_TAG" >> $GITHUB_ENV
+
+    - name: Generate AI Changelog with DeepSeek
+      id: ai_changelog
+      env:
+        DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+      run: |
+        VERSION="${{ steps.bump_version.outputs.new_version }}"
+        COMMITS=$(cat commits.txt)
+        
+        # Only use AI if API key is available
+        if [ -n "$DEEPSEEK_API_KEY" ]; then
+          echo "🤖 Generating changelog with DeepSeek AI..."
+          
+          # Prepare the prompt
+          PROMPT="Você é um assistente especializado em gerar changelogs profissionais para plugins WordPress.
+
+        Baseado nos seguintes commits, gere um changelog em português brasileiro para a versão v${VERSION} do plugin Woo Envios:
+
+        COMMITS:
+        ${COMMITS}
+
+        REGRAS:
+        1. Agrupe as mudanças por categoria: 🐛 Correções, ✨ Novidades, 🔧 Melhorias, 📦 Outros
+        2. Use emojis para cada item
+        3. Seja conciso mas informativo
+        4. Ignore commits de bump de versão ou [skip ci]
+        5. Destaque correções críticas primeiro
+        6. Formato Markdown
+        7. Máximo 300 palavras
+
+        Gere APENAS o changelog, sem introduções."
+
+          # Escape the prompt for JSON
+          ESCAPED_PROMPT=$(echo "$PROMPT" | jq -Rs .)
+          
+          # Call DeepSeek API
+          RESPONSE=$(curl -s -X POST "https://api.deepseek.com/chat/completions" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $DEEPSEEK_API_KEY" \
+            -d "{
+              \"model\": \"deepseek-chat\",
+              \"messages\": [{\"role\": \"user\", \"content\": $ESCAPED_PROMPT}],
+              \"temperature\": 0.7,
+              \"max_tokens\": 1000
+            }")
+          
+          # Extract the changelog from response
+          CHANGELOG=$(echo "$RESPONSE" | jq -r '.choices[0].message.content // empty')
+          
+          if [ -n "$CHANGELOG" ] && [ "$CHANGELOG" != "null" ]; then
+            echo "✅ AI Changelog generated successfully!"
+            
+            # Create release notes
+            cat > release_notes.txt << EOF
+        # 🚀 Woo Envios v${VERSION}
+
+        ${CHANGELOG}
+
+        ---
+        
+        📅 **Data:** $(date +"%d/%m/%Y")
+        📦 **Arquivo:** \`woo-envios.zip\`
+        🔄 **Atualização automática:** Disponível no painel WordPress
+        
+        > ⚡ Changelog gerado automaticamente com IA
+        EOF
+          else
+            echo "⚠️ AI response empty, using fallback..."
+            # Fallback to manual changelog
+            cat > release_notes.txt << EOF
+        # 🚀 Woo Envios v${VERSION}
+
+        ## 📋 Mudanças nesta versão
+
+        ${COMMITS}
+
+        ---
+        
+        📅 **Data:** $(date +"%d/%m/%Y")
+        📦 **Arquivo:** \`woo-envios.zip\`
+        EOF
+          fi
+        else
+          echo "⚠️ No DeepSeek API key, using commit-based changelog..."
+          
+          # Fallback: Generate changelog from commits directly
+          cat > release_notes.txt << EOF
+        # 🚀 Woo Envios v${VERSION}
+
+        ## 📋 Mudanças nesta versão
+
+        ${COMMITS}
+
+        ---
+        
+        📅 **Data:** $(date +"%d/%m/%Y")
+        📦 **Arquivo:** \`woo-envios.zip\`
+        🔄 **Atualização automática:** Disponível no painel WordPress
+        EOF
+        fi
+        
+        echo "📝 Release notes generated:"
+        cat release_notes.txt
 
     - name: Commit Version Bump
       run: |
         git config user.name "GitHub Actions"
         git config user.email "actions@github.com"
         git add woo-envios.php
-        # Check if there are changes before committing
         if git diff --staged --quiet; then
           echo "No changes to commit"
         else
@@ -74,42 +192,55 @@ jobs:
 
     - name: Create Zip Artifact
       run: |
-        # Create a build directory
         mkdir -p build/woo-envios
         
-        # Copy files to build dir, excluding unwanted
-        rsync -av --progress . build/woo-envios --exclude .git --exclude .github --exclude build --exclude composer.json --exclude composer.lock --exclude .gitignore --exclude test-*.php
+        rsync -av --progress . build/woo-envios \
+          --exclude .git \
+          --exclude .github \
+          --exclude build \
+          --exclude composer.json \
+          --exclude composer.lock \
+          --exclude .gitignore \
+          --exclude test-*.php \
+          --exclude commits.txt \
+          --exclude release_notes.txt
         
-        # Zip it
         cd build
         zip -r ../woo-envios.zip woo-envios
-
-    - name: Extract Changelog for Version
-      id: changelog
-      run: |
-        VERSION="${{ steps.bump_version.outputs.new_version }}"
-        
-        # Extract the section for this version from CHANGELOG.md
-        if [ -f "CHANGELOG.md" ]; then
-          # Use awk to extract the section for the latest version
-          NOTES=$(awk '/^## \[/{if(found) exit; found=1} found{print}' CHANGELOG.md | tail -n +2)
-          
-          if [ -z "$NOTES" ]; then
-            printf "🚀 Release v%s\n\n📦 **Novidades desta versão:**\n- Melhorias gerais e correções de bugs\n- Veja o CHANGELOG.md para detalhes completos\n" "$VERSION" > release_notes.txt
-          else
-            echo "$NOTES" > release_notes.txt
-          fi
-        else
-          echo "🚀 Release v${VERSION}" > release_notes.txt
-        fi
-
 
     - name: Create Release
       uses: ncipollo/release-action@v1
       with:
         tag: v${{ steps.bump_version.outputs.new_version }}
-        name: "🚀 Release v${{ steps.bump_version.outputs.new_version }}"
+        name: "🚀 Woo Envios v${{ steps.bump_version.outputs.new_version }}"
         artifacts: "woo-envios.zip"
         token: ${{ secrets.GITHUB_TOKEN }}
         bodyFile: release_notes.txt
         makeLatest: true
+
+    - name: Update CHANGELOG.md
+      run: |
+        VERSION="${{ steps.bump_version.outputs.new_version }}"
+        DATE=$(date +"%Y-%m-%d")
+        COMMITS=$(cat commits.txt)
+        
+        # Create new changelog entry
+        NEW_ENTRY="## [${VERSION}] - ${DATE}
+
+        ${COMMITS}
+
+        "
+        
+        # Prepend to CHANGELOG.md
+        if [ -f "CHANGELOG.md" ]; then
+          echo -e "${NEW_ENTRY}\n$(cat CHANGELOG.md)" > CHANGELOG.md
+        else
+          echo -e "# Changelog\n\n${NEW_ENTRY}" > CHANGELOG.md
+        fi
+        
+        # Commit changelog
+        git add CHANGELOG.md
+        if ! git diff --staged --quiet; then
+          git commit -m "docs: update CHANGELOG.md for v${VERSION} [skip ci]"
+          git push
+        fi
