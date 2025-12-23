@@ -70,24 +70,23 @@
                 error: function (xhr, status, error) {
                     console.error('[Woo Envios] AJAX Error:', error, xhr.responseText);
                 }
-            }
             });
-},
+        },
 
-    debounce: function (func, wait) {
-        let timeout;
-        return function () {
-            const context = this, args = arguments;
-            clearTimeout(timeout);
-            timeout = setTimeout(function () {
-                func.apply(context, args);
-            }, wait);
-        };
-    }
+        debounce: function (func, wait) {
+            let timeout;
+            return function () {
+                const context = this, args = arguments;
+                clearTimeout(timeout);
+                timeout = setTimeout(function () {
+                    func.apply(context, args);
+                }, wait);
+            };
+        }
     };
 
-$(document).ready(function () {
-    WooEnvios.init();
-});
+    $(document).ready(function () {
+        WooEnvios.init();
+    });
 
-}) (jQuery);
+})(jQuery);
