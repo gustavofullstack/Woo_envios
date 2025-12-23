@@ -98,11 +98,43 @@ class Woo_Envios_Shipping_Method extends WC_Shipping_Method {
 		$logger->debug( 'Session coords: ' . print_r( $session_coords, true ), $context );
 
 		// If no coordinates in session, try Correios directly based on CEP.
+		// If no coordinates in session, try to Geocode on the fly (Server-Side Fallback)
 		if ( empty( $session_coords ) ) {
-			$logger->warning( 'NO SESSION COORDINATES! Only showing Correios.', $context );
-			// Try Correios as fallback when we can't geocode.
-			$this->calculate_correios_shipping( $package );
-			return;
+			$logger->warning( 'NO SESSION COORDINATES! Attempting server-side fallback geocode.', $context );
+			
+			// Build address from package
+			$destination = $package['destination'] ?? array();
+			$address_parts = array(
+				$destination['address_1'] ?? '',
+				$destination['city'] ?? '',
+				$destination['state'] ?? '',
+				$destination['postcode'] ?? '',
+				$destination['country'] ?? ''
+			);
+			$full_address = implode( ', ', array_filter( $address_parts ) );
+			
+			// Try to geocode
+			$fallback_coords = \Woo_Envios\Services\Geocoder::geocode( $full_address );
+			
+			if ( $fallback_coords ) {
+				$logger->info( 'Fallback Geocoding SUCCESS! Saved to session.', $context );
+				$session_coords = $fallback_coords;
+				
+				// Save to session to avoid re-geocoding on every calculation
+				if ( isset( WC()->session ) ) {
+					WC()->session->set( 'woo_envios_coords', array(
+						'lat'       => $session_coords['lat'],
+						'lng'       => $session_coords['lng'],
+						'signature' => $signature,
+					) );
+					// WC()->session->save_data(); // Do not force save here to avoid session lock issues during calc
+				}
+			} else {
+				$logger->warning( 'Fallback Geocoding FAILED. Only showing Correios.', $context );
+				// Try Correios as fallback when we can't geocode.
+				$this->calculate_correios_shipping( $package );
+				return;
+			}
 		}
 
 		// Use Google Distance Matrix API for real route distance instead of Haversine
@@ -289,11 +321,15 @@ class Woo_Envios_Shipping_Method extends WC_Shipping_Method {
 	 */
 	private function build_destination_signature( array $package ): string {
 		$destination = $package['destination'] ?? array();
+		
+		// Normalize postcode: remove non-digits to match session signature robustly
+		$postcode = preg_replace( '/\D/', '', $destination['postcode'] ?? '' );
+		
 		$parts       = array(
 			// Removed address_1 to match relaxed session logic (avoids "Av" vs "Avenida" issues)
 			sanitize_text_field( $destination['city'] ?? '' ),
 			sanitize_text_field( $destination['state'] ?? '' ),
-			sanitize_text_field( $destination['postcode'] ?? '' ),
+			$postcode, // Normalized
 			sanitize_text_field( $destination['country'] ?? '' ),
 		);
 

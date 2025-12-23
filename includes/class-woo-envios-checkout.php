@@ -112,6 +112,8 @@ class Woo_Envios_Checkout {
 		// Store in session.
 		if ( isset( WC()->session ) ) {
 			// Relaxed signature: Postcode + City + State + Country (excludes address_1/number to avoid "Av" vs "Avenida" mismatches)
+			// Normalize postcode
+			$postcode = preg_replace( '/\D/', '', $postcode );
 			$signature = md5( strtolower( implode( '|', array( $city, $state, $postcode, $country ) ) ) );
 			WC()->session->set(
 				'woo_envios_coords',
