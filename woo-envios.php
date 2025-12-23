@@ -29,7 +29,7 @@ final class Woo_Envios_Plugin {
 	/**
 	 * Plugin version.
 	 */
-	public const VERSION = '3.2.0';
+	public const VERSION = '3.2.2';
 
 	/**
 	 * Construtor privado.
@@ -75,7 +75,8 @@ final class Woo_Envios_Plugin {
 		require_once WOO_ENVIOS_PATH . 'includes/class-woo-envios-logger.php';
 		require_once WOO_ENVIOS_PATH . 'includes/class-woo-envios-google-maps.php';
 		
-		// Note: Geocoder.php is loaded via Composer autoload (vendor/autoload.php)
+		// Manually load Geocoder service (fixes 'Class not found' error)
+		require_once WOO_ENVIOS_PATH . 'includes/Services/Geocoder.php';
 		
 		// Load shipping service (SuperFrete)
 		require_once WOO_ENVIOS_PATH . 'includes/Services/class-woo-envios-correios.php';
