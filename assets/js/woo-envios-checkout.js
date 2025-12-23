@@ -4,18 +4,25 @@
 
     const WooEnvios = {
         init: function () {
-            // $(document.body).on('updated_checkout', this.triggerGeocode); // Removed to prevent loop
-            $('form.checkout').on('change', '#billing_address_1, #billing_number, #billing_neighborhood, #billing_city, #billing_state, #billing_postcode', this.debounce(this.triggerGeocode, 800));
+            // Listen to changes on BOTH billing and shipping address fields
+            const addressFields = '#billing_address_1, #billing_number, #billing_neighborhood, #billing_city, #billing_state, #billing_postcode, ' +
+                                '#shipping_address_1, #shipping_number, #shipping_neighborhood, #shipping_city, #shipping_state, #shipping_postcode';
+            
+            $('form.checkout').on('change', addressFields, this.debounce(this.triggerGeocode, 800));
         },
 
         triggerGeocode: function () {
-            const address1 = $('#billing_address_1').val();
-            const number = $('#billing_number').val();
-            const neighborhood = $('#billing_neighborhood').val();
-            const city = $('#billing_city').val();
-            const state = $('#billing_state').val();
-            const postcode = $('#billing_postcode').val();
-            const country = $('#billing_country').val() || 'BR';
+            // Prioritize shipping address if different shipping address checkbox is checked
+            const useShipping = $('#ship-to-different-address-checkbox').is(':checked');
+            const prefix = useShipping ? 'shipping' : 'billing';
+            
+            const address1 = $(`#${prefix}_address_1`).val();
+            const number = $(`#${prefix}_number`).val();
+            const neighborhood = $(`#${prefix}_neighborhood`).val();
+            const city = $(`#${prefix}_city`).val();
+            const state = $(`#${prefix}_state`).val();
+            const postcode = $(`#${prefix}_postcode`).val();
+            const country = $(`#${prefix}_country`).val() || 'BR';
 
             if (!address1 || !city || !state || !postcode) {
                 return;
