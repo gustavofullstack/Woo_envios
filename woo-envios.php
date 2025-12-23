@@ -277,3 +277,4 @@ function woo_envios_bootstrap(): void {
 add_action( 'plugins_loaded', 'woo_envios_bootstrap', 20 ); // Prioridade 20 para carregar após WooCommerce
 
 /* Trigger release 1766496909 */
+
