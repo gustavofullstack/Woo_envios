@@ -168,10 +168,52 @@ final class Woo_Envios_Plugin {
 	}
 
 	/**
+	 * Sort rates to put Flash Delivery on top.
+	 */
+	public function sort_shipping_rates( array $rates, array $package ): array {
+		if ( empty( $rates ) ) {
+			return $rates;
+		}
+
+		$flash_rates = array();
+		$other_rates = array();
+
+		foreach ( $rates as $key => $rate ) {
+			if ( 'woo_envios_radius' === $rate->method_id || strpos( $key, 'woo_envios_radius' ) !== false ) {
+				$flash_rates[ $key ] = $rate;
+			} else {
+				$other_rates[ $key ] = $rate;
+			}
+		}
+
+		return $flash_rates + $other_rates;
+	}
+
+	/**
+	 * Enqueue Frontend Styles.
+	 */
+	public function enqueue_frontend_styles(): void {
+		if ( is_checkout() || is_cart() ) {
+			wp_enqueue_style( 
+				'woo-envios-frontend', 
+				WOO_ENVIOS_ASSETS . 'css/woo-envios-frontend.css', 
+				array(), 
+				self::VERSION 
+			);
+		}
+	}
+
+	/**
 	 * Register hooks.
 	 */
 	private function register_hooks(): void {
 		register_activation_hook( WOO_ENVIOS_FILE, array( $this, 'activate' ) );
+		
+		// Frontend Assets
+		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_frontend_styles' ) );
+		
+		// Sort Shipping Rates (Flash on Top)
+		add_filter( 'woocommerce_package_rates', array( $this, 'sort_shipping_rates' ), 10, 2 );
 	}
 
 	/**

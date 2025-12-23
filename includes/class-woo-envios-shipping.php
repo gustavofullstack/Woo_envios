@@ -233,7 +233,7 @@ class Woo_Envios_Shipping_Method extends WC_Shipping_Method {
 			foreach ( $rates as $rate_data ) {
 				$this->add_rate( array(
 					'id'        => $this->id . '_' . $rate_data['id'],
-					'label'     => 'Correios ' . $rate_data['label'],
+					'label'     => $rate_data['label'],
 					'cost'      => $rate_data['cost'],
 					'package'   => $package,
 					'meta_data' => array(

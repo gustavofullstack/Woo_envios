@@ -1,0 +1,130 @@
+/**
+ * Woo Envios Frontend Styles
+ * Modern, card-based layout for shipping options.
+ */
+
+/* Target standard WooCommerce shipping list */
+ul.woocommerce-shipping-methods,
+ul#shipping_method {
+    list-style: none inside;
+    margin: 0;
+    padding: 0;
+}
+
+ul.woocommerce-shipping-methods li,
+ul#shipping_method li {
+    display: flex;
+    align-items: center;
+    border: 1px solid #e2e4e7;
+    border-radius: 8px;
+    /* Rounded corners */
+    padding: 16px 20px;
+    margin-bottom: 12px;
+    background-color: #ffffff;
+    transition: all 0.2s ease-in-out;
+    cursor: pointer;
+    position: relative;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+/* Hover State */
+ul.woocommerce-shipping-methods li:hover,
+ul#shipping_method li:hover {
+    border-color: #007cba;
+    /* WooCommerce Primary Blue, or use variable */
+    background-color: #fcfcfc;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+}
+
+/* Selected State (Modern Browser Support) */
+ul.woocommerce-shipping-methods li:has(input:checked),
+ul#shipping_method li:has(input:checked) {
+    border-color: #007cba;
+    background-color: #f0f7fc;
+    box-shadow: 0 0 0 1px #007cba;
+    /* Thicker border effect */
+}
+
+/* Fallback for older browsers (using class if JS adds it, or check sibling) */
+/* Generally :has is well supported now. */
+
+/* Label Styling */
+ul.woocommerce-shipping-methods li label,
+ul#shipping_method li label {
+    margin-left: 12px;
+    font-size: 15px;
+    color: #333;
+    font-weight: 500;
+    flex-grow: 1;
+    /* Push text to fill space */
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+/* Price Formatting */
+ul.woocommerce-shipping-methods li .amount,
+ul#shipping_method li .amount {
+    font-weight: 700;
+    color: #1d2327;
+}
+
+/* ⚡ FLASH DELIVERY SPECIAL STYLING ⚡ */
+/* Targeting inputs with value containing 'woo_envios_radius' */
+
+/* Container Highlight */
+ul.woocommerce-shipping-methods li:has(input[value*="woo_envios_radius"]),
+ul#shipping_method li:has(input[value*="woo_envios_radius"]) {
+    border-color: #10b981;
+    /* Emerald Green */
+    background-color: #f0fdf4;
+    /* Light Green Bg */
+}
+
+/* Selected Flash */
+ul.woocommerce-shipping-methods li:has(input[value*="woo_envios_radius"]):has(input:checked),
+ul#shipping_method li:has(input[value*="woo_envios_radius"]):has(input:checked) {
+    box-shadow: 0 0 0 2px #10b981;
+    /* Stronger outline */
+    background-color: #ecfdf5;
+}
+
+/* Icon & Label Text */
+ul.woocommerce-shipping-methods li:has(input[value*="woo_envios_radius"]) label,
+ul#shipping_method li:has(input[value*="woo_envios_radius"]) label {
+    color: #047857;
+    /* Darker Green Text */
+    font-weight: 700;
+}
+
+/* Add Flash Icon Before Label */
+ul.woocommerce-shipping-methods li:has(input[value*="woo_envios_radius"]) label::before {
+    content: "⚡";
+    font-size: 1.2em;
+    margin-right: 8px;
+    display: inline-block;
+    animation: woo-envios-pulse 2s infinite;
+}
+
+@keyframes woo-envios-pulse {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(1.2);
+        opacity: 0.8;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Hide standard radio? Optional. Keep for accessibility unless custom checked style provided. */
+/* ul.woocommerce-shipping-methods li input[type="radio"] { opacity: 0; position: absolute; } */
