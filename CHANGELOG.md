@@ -1,3 +1,9 @@
+## [3.1.31] - 2025-12-23
+
+- fix: corrige carregamento duplicado do Geocoder e métodos Logger
+- feat: integra DeepSeek AI para gerar changelogs inteligentes
+
+
 # Changelog
 
 Todas as mudanças notáveis deste projeto são documentadas aqui.
