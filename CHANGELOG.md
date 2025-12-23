@@ -1,6 +1,14 @@
 ## [3.1.31] - 2025-12-23
 
 
+## [3.2.1] - 2025-12-23
+
+c91eebb - Release: Bump version to 3.2.0 for force update
+a8a5406 - docs: update CHANGELOG.md for v3.1.39 [skip ci]
+
+---
+
+
 ## [3.1.39] - 2025-12-23
 
 09988b4 - Fix: Implement robust server-side geocoding fallback and normalize postcode signatures
