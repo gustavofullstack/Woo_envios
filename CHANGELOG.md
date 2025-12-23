@@ -1,6 +1,14 @@
 ## [3.1.31] - 2025-12-23
 
 
+## [3.1.34] - 2025-12-23
+
+48b8a8e - Fix: Permitir múltiplos métodos de envio simultaneamente (Flash + Correios)
+256925e - docs: update CHANGELOG.md for v3.1.33 [skip ci]
+
+---
+
+
 ## [3.1.33] - 2025-12-23
 
 0c61d66 - feat: add initial WooCommerce shipping plugin
