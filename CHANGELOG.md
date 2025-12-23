@@ -1,6 +1,14 @@
 ## [3.1.31] - 2025-12-23
 
 
+## [3.2.2] - 2025-12-23
+
+8878c22 - Fix: Update plugin-update.json and internal version constant to 3.2.0
+3488ded - docs: update CHANGELOG.md for v3.2.1 [skip ci]
+
+---
+
+
 ## [3.2.1] - 2025-12-23
 
 c91eebb - Release: Bump version to 3.2.0 for force update
