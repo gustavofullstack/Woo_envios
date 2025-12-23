@@ -29,7 +29,7 @@ final class Woo_Envios_Plugin {
 	/**
 	 * Plugin version.
 	 */
-	public const VERSION = '3.0.0';
+	public const VERSION = '3.2.0';
 
 	/**
 	 * Construtor privado.
