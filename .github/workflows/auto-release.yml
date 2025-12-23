@@ -54,25 +54,40 @@ jobs:
         sed -i "s/Version: $CURRENT_VERSION/Version: $NEW_VERSION/" woo-envios.php
         sed -i "s/const VERSION = '$CURRENT_VERSION';/const VERSION = '$NEW_VERSION';/" woo-envios.php
 
-    - name: Get Commits Since Last Tag
+    - name: Get Commits and Changes Since Last Tag
       id: commits
       run: |
         # Get the last tag
         LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
         
+        echo "Last tag: $LAST_TAG"
+        
         if [ -z "$LAST_TAG" ]; then
-          # No previous tag, get last 10 commits
-          COMMITS=$(git log --pretty=format:"- %s" -n 10)
+          COMMITS=$(git log --pretty=format:"%h - %s (%an)" -n 15)
+          FILES_CHANGED=$(git diff --stat HEAD~15 HEAD 2>/dev/null | tail -20)
         else
-          # Get commits since last tag
-          COMMITS=$(git log ${LAST_TAG}..HEAD --pretty=format:"- %s" --no-merges)
+          COMMITS=$(git log ${LAST_TAG}..HEAD --pretty=format:"%h - %s (%an)" --no-merges)
+          FILES_CHANGED=$(git diff --stat ${LAST_TAG}..HEAD 2>/dev/null | tail -20)
         fi
         
-        # Save commits to file for DeepSeek
-        echo "$COMMITS" > commits.txt
-        cat commits.txt
+        # Get the actual code diff (limited)
+        if [ -n "$LAST_TAG" ]; then
+          CODE_DIFF=$(git diff ${LAST_TAG}..HEAD --no-color -- '*.php' | head -100)
+        else
+          CODE_DIFF=$(git diff HEAD~5..HEAD --no-color -- '*.php' | head -100)
+        fi
         
-        # Export for later steps
+        # Save to files
+        echo "$COMMITS" > commits.txt
+        echo "$FILES_CHANGED" > files_changed.txt
+        echo "$CODE_DIFF" > code_diff.txt
+        
+        echo "=== COMMITS ==="
+        cat commits.txt
+        echo ""
+        echo "=== FILES CHANGED ==="
+        cat files_changed.txt
+        
         echo "LAST_TAG=$LAST_TAG" >> $GITHUB_ENV
 
     - name: Generate AI Changelog with DeepSeek
@@ -82,100 +97,131 @@ jobs:
       run: |
         VERSION="${{ steps.bump_version.outputs.new_version }}"
         COMMITS=$(cat commits.txt)
+        FILES=$(cat files_changed.txt)
+        DIFF=$(cat code_diff.txt | head -80)
+        TIMESTAMP=$(date +%s)
         
-        # Only use AI if API key is available
         if [ -n "$DEEPSEEK_API_KEY" ]; then
           echo "🤖 Generating changelog with DeepSeek AI..."
           
-          # Prepare the prompt
-          PROMPT="Você é um assistente especializado em gerar changelogs profissionais para plugins WordPress.
+          # Build a detailed prompt with all context
+          PROMPT="Você é um redator técnico especializado em changelogs de plugins WordPress.
 
-        Baseado nos seguintes commits, gere um changelog em português brasileiro para a versão v${VERSION} do plugin Woo Envios:
+CONTEXTO: Plugin Woo Envios - Cálculo de frete WooCommerce com Google Maps e SuperFrete.
 
-        COMMITS:
-        ${COMMITS}
+VERSÃO: v${VERSION}
+TIMESTAMP: ${TIMESTAMP}
 
-        REGRAS:
-        1. Agrupe as mudanças por categoria: 🐛 Correções, ✨ Novidades, 🔧 Melhorias, 📦 Outros
-        2. Use emojis para cada item
-        3. Seja conciso mas informativo
-        4. Ignore commits de bump de versão ou [skip ci]
-        5. Destaque correções críticas primeiro
-        6. Formato Markdown
-        7. Máximo 300 palavras
+COMMITS DESTA RELEASE:
+${COMMITS}
 
-        Gere APENAS o changelog, sem introduções."
+ARQUIVOS MODIFICADOS:
+${FILES}
 
-          # Escape the prompt for JSON
+TRECHO DO CÓDIGO ALTERADO:
+\`\`\`php
+${DIFF}
+\`\`\`
+
+INSTRUÇÕES OBRIGATÓRIAS:
+1. Analise CADA commit individualmente e descreva o que foi feito
+2. Use o diff do código para entender as mudanças REAIS
+3. NÃO repita informações genéricas - seja ESPECÍFICO
+4. Mencione nomes de arquivos, classes e métodos quando relevante
+5. Se houver correção de bug, explique qual era o problema e como foi resolvido
+6. NUNCA use frases genéricas como 'melhorias gerais' ou 'correções de bugs'
+
+FORMATO (use exatamente este):
+
+## 🐛 Correções
+- [descrição específica da correção]
+
+## ✨ Novidades  
+- [descrição específica da novidade]
+
+## 🔧 Melhorias
+- [descrição específica da melhoria]
+
+## 📁 Arquivos Alterados
+- [lista dos principais arquivos modificados]
+
+IMPORTANTE: Gere APENAS o conteúdo do changelog, sem introduções ou conclusões.
+Cada item deve ser ÚNICO e baseado nas mudanças REAIS do código."
+
           ESCAPED_PROMPT=$(echo "$PROMPT" | jq -Rs .)
           
-          # Call DeepSeek API
           RESPONSE=$(curl -s -X POST "https://api.deepseek.com/chat/completions" \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer $DEEPSEEK_API_KEY" \
             -d "{
               \"model\": \"deepseek-chat\",
               \"messages\": [{\"role\": \"user\", \"content\": $ESCAPED_PROMPT}],
-              \"temperature\": 0.7,
-              \"max_tokens\": 1000
+              \"temperature\": 0.3,
+              \"max_tokens\": 1500
             }")
           
-          # Extract the changelog from response
           CHANGELOG=$(echo "$RESPONSE" | jq -r '.choices[0].message.content // empty')
           
           if [ -n "$CHANGELOG" ] && [ "$CHANGELOG" != "null" ]; then
-            echo "✅ AI Changelog generated successfully!"
+            echo "✅ AI Changelog generated!"
             
-            # Create release notes
             cat > release_notes.txt << EOF
-        # 🚀 Woo Envios v${VERSION}
+# 🚀 Woo Envios v${VERSION}
 
-        ${CHANGELOG}
+${CHANGELOG}
 
-        ---
-        
-        📅 **Data:** $(date +"%d/%m/%Y")
-        📦 **Arquivo:** \`woo-envios.zip\`
-        🔄 **Atualização automática:** Disponível no painel WordPress
-        
-        > ⚡ Changelog gerado automaticamente com IA
-        EOF
+---
+
+📅 **Data:** $(date +"%d/%m/%Y às %H:%M")
+📦 **Arquivo:** \`woo-envios.zip\`
+🔄 **Atualização:** Disponível automaticamente no WordPress
+🏷️ **Tag anterior:** ${LAST_TAG:-"Nenhuma"}
+
+> ⚡ Changelog gerado por IA (DeepSeek) - ID: ${TIMESTAMP}
+EOF
           else
-            echo "⚠️ AI response empty, using fallback..."
-            # Fallback to manual changelog
+            echo "⚠️ AI failed, using fallback..."
             cat > release_notes.txt << EOF
-        # 🚀 Woo Envios v${VERSION}
+# 🚀 Woo Envios v${VERSION}
 
-        ## 📋 Mudanças nesta versão
+## 📋 Commits desta versão
 
-        ${COMMITS}
+${COMMITS}
 
-        ---
-        
-        📅 **Data:** $(date +"%d/%m/%Y")
-        📦 **Arquivo:** \`woo-envios.zip\`
-        EOF
+## 📁 Arquivos modificados
+
+\`\`\`
+${FILES}
+\`\`\`
+
+---
+
+📅 **Data:** $(date +"%d/%m/%Y às %H:%M")
+📦 **Arquivo:** \`woo-envios.zip\`
+EOF
           fi
         else
-          echo "⚠️ No DeepSeek API key, using commit-based changelog..."
-          
-          # Fallback: Generate changelog from commits directly
+          echo "⚠️ No API key, using commit log..."
           cat > release_notes.txt << EOF
-        # 🚀 Woo Envios v${VERSION}
+# 🚀 Woo Envios v${VERSION}
 
-        ## 📋 Mudanças nesta versão
+## 📋 Commits
 
-        ${COMMITS}
+${COMMITS}
 
-        ---
-        
-        📅 **Data:** $(date +"%d/%m/%Y")
-        📦 **Arquivo:** \`woo-envios.zip\`
-        🔄 **Atualização automática:** Disponível no painel WordPress
-        EOF
+## 📁 Arquivos modificados
+
+\`\`\`
+${FILES}
+\`\`\`
+
+---
+
+📅 **Data:** $(date +"%d/%m/%Y às %H:%M")
+EOF
         fi
         
-        echo "📝 Release notes generated:"
+        echo "📝 Release notes:"
         cat release_notes.txt
 
     - name: Commit Version Bump
@@ -201,8 +247,10 @@ jobs:
           --exclude composer.json \
           --exclude composer.lock \
           --exclude .gitignore \
-          --exclude test-*.php \
+          --exclude 'test-*.php' \
           --exclude commits.txt \
+          --exclude files_changed.txt \
+          --exclude code_diff.txt \
           --exclude release_notes.txt
         
         cd build
@@ -212,7 +260,7 @@ jobs:
       uses: ncipollo/release-action@v1
       with:
         tag: v${{ steps.bump_version.outputs.new_version }}
-        name: "🚀 Woo Envios v${{ steps.bump_version.outputs.new_version }}"
+        name: "v${{ steps.bump_version.outputs.new_version }} - Woo Envios"
         artifacts: "woo-envios.zip"
         token: ${{ secrets.GITHUB_TOKEN }}
         bodyFile: release_notes.txt
@@ -224,21 +272,24 @@ jobs:
         DATE=$(date +"%Y-%m-%d")
         COMMITS=$(cat commits.txt)
         
-        # Create new changelog entry
         NEW_ENTRY="## [${VERSION}] - ${DATE}
 
-        ${COMMITS}
+${COMMITS}
 
-        "
+---
+"
         
-        # Prepend to CHANGELOG.md
         if [ -f "CHANGELOG.md" ]; then
-          echo -e "${NEW_ENTRY}\n$(cat CHANGELOG.md)" > CHANGELOG.md
+          # Insert after first line (title)
+          head -2 CHANGELOG.md > temp_changelog.md
+          echo "" >> temp_changelog.md
+          echo "$NEW_ENTRY" >> temp_changelog.md
+          tail -n +3 CHANGELOG.md >> temp_changelog.md
+          mv temp_changelog.md CHANGELOG.md
         else
           echo -e "# Changelog\n\n${NEW_ENTRY}" > CHANGELOG.md
         fi
         
-        # Commit changelog
         git add CHANGELOG.md
         if ! git diff --staged --quiet; then
           git commit -m "docs: update CHANGELOG.md for v${VERSION} [skip ci]"
