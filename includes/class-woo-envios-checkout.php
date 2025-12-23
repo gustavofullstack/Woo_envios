@@ -111,11 +111,8 @@ class Woo_Envios_Checkout {
 
 		// Store in session.
 		if ( isset( WC()->session ) ) {
-			// Signature must match build_destination_signature in Woo_Envios_Shipping_Method.
-			// We exclude address_2/number/neighborhood from signature as they don't change the broad location context enough to invalidate the cache key logic if we want to be strict,
-			// BUT actually, we just need to match what the shipping method sees.
-			// The shipping method sees address_1, city, state, postcode, country.
-			$signature = md5( strtolower( implode( '|', array( $address_1, $city, $state, $postcode, $country ) ) ) );
+			// Relaxed signature: Postcode + City + State + Country (excludes address_1/number to avoid "Av" vs "Avenida" mismatches)
+			$signature = md5( strtolower( implode( '|', array( $city, $state, $postcode, $country ) ) ) );
 			WC()->session->set(
 				'woo_envios_coords',
 				array(
@@ -125,7 +122,7 @@ class Woo_Envios_Checkout {
 				)
 			);
 			WC()->session->save_data(); // Force save to avoid race conditions.
-			error_log( 'Woo Envios Checkout: Coordinates saved to session: ' . print_r( $coords, true ) );
+			error_log( 'Woo Envios Checkout: Coordinates saved to session: ' . print_r( $coords, true ) . ' Sig: ' . $signature );
 		} else {
 			error_log( 'Woo Envios Checkout: WC Session not available' );
 		}

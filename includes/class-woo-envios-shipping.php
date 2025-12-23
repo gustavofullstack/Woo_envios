@@ -290,7 +290,7 @@ class Woo_Envios_Shipping_Method extends WC_Shipping_Method {
 	private function build_destination_signature( array $package ): string {
 		$destination = $package['destination'] ?? array();
 		$parts       = array(
-			sanitize_text_field( $destination['address_1'] ?? '' ),
+			// Removed address_1 to match relaxed session logic (avoids "Av" vs "Avenida" issues)
 			sanitize_text_field( $destination['city'] ?? '' ),
 			sanitize_text_field( $destination['state'] ?? '' ),
 			sanitize_text_field( $destination['postcode'] ?? '' ),
