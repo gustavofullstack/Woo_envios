@@ -1,6 +1,14 @@
 ## [3.1.31] - 2025-12-23
 
 
+## [3.1.38] - 2025-12-23
+
+99a3e98 - Fix: Relax signature check (remove address_1) to ensure session coordinates are used
+6e465a2 - docs: update CHANGELOG.md for v3.1.37 [skip ci]
+
+---
+
+
 ## [3.1.37] - 2025-12-23
 
 f614c37 - Fix: JavaScript syntax error in woo-envios-checkout.js
