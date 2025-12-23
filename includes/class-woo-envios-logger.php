@@ -91,6 +91,33 @@ class Woo_Envios_Logger {
 	}
 
 	/**
+	 * Log an error message.
+	 *
+	 * @param string $message Error message.
+	 */
+	public static function error( string $message ): void {
+		self::log( $message, 'error' );
+	}
+
+	/**
+	 * Log an info message.
+	 *
+	 * @param string $message Info message.
+	 */
+	public static function info( string $message ): void {
+		self::log( $message, 'info' );
+	}
+
+	/**
+	 * Log a warning message.
+	 *
+	 * @param string $message Warning message.
+	 */
+	public static function warning( string $message ): void {
+		self::log( $message, 'warning' );
+	}
+
+	/**
 	 * Log API failure.
 	 *
 	 * @param string $api_name API name.
