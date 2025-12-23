@@ -1,5 +1,15 @@
 ## [3.1.31] - 2025-12-23
 
+
+## [3.1.32] - 2025-12-23
+
+4bf3d38 - test: dispara workflow para testar changelog AI
+75b73cb - fix: corrige erros YAML no workflow (heredoc/escape)
+5990e64 - feat: melhora prompt DeepSeek para changelogs únicos e específicos
+939dd6d - docs: update CHANGELOG.md for v3.1.31 [skip ci]
+
+---
+
 - fix: corrige carregamento duplicado do Geocoder e métodos Logger
 - feat: integra DeepSeek AI para gerar changelogs inteligentes
 
