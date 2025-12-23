@@ -72,20 +72,34 @@ class Woo_Envios_Shipping_Method extends WC_Shipping_Method {
 	 * @return void
 	 */
 	public function calculate_shipping( $package = array() ): void {
+		$logger = wc_get_logger();
+		$context = array( 'source' => 'woo-envios-shipping' );
+		
+		$logger->debug( '=== CALCULATE_SHIPPING CALLED ===', $context );
+		$logger->debug( 'Enabled: ' . $this->enabled, $context );
+		
 		if ( 'yes' !== $this->enabled ) {
+			$logger->debug( 'Method disabled, returning', $context );
 			return;
 		}
 
 		$store_coords = Woo_Envios_Admin::get_store_coordinates();
+		$logger->debug( 'Store coordinates: ' . print_r( $store_coords, true ), $context );
+		
 		if ( empty( $store_coords['lat'] ) || empty( $store_coords['lng'] ) ) {
+			$logger->warning( 'Store coordinates not configured!', $context );
 			return;
 		}
 
 		$signature      = $this->build_destination_signature( $package );
 		$session_coords = $this->get_session_coordinates( $signature );
+		
+		$logger->debug( 'Signature: ' . $signature, $context );
+		$logger->debug( 'Session coords: ' . print_r( $session_coords, true ), $context );
 
 		// If no coordinates in session, try Correios directly based on CEP.
 		if ( empty( $session_coords ) ) {
+			$logger->warning( 'NO SESSION COORDINATES! Only showing Correios.', $context );
 			// Try Correios as fallback when we can't geocode.
 			$this->calculate_correios_shipping( $package );
 			return;
@@ -95,6 +109,7 @@ class Woo_Envios_Shipping_Method extends WC_Shipping_Method {
 		$distance_data = $this->calculate_route_distance( $store_coords, $session_coords, $package );
 		
 		if ( is_wp_error( $distance_data ) || empty( $distance_data ) ) {
+			$logger->debug( 'Distance Matrix failed, using Haversine fallback', $context );
 			// Fallback to Haversine if Distance Matrix fails
 			$distance = $this->calculate_distance(
 				(float) $store_coords['lat'],
@@ -106,18 +121,23 @@ class Woo_Envios_Shipping_Method extends WC_Shipping_Method {
 			// Convert meters to kilometers
 			$distance = round( $distance_data['distance_value'] / 1000, 2 );
 		}
+		
+		$logger->debug( 'Calculated distance: ' . $distance . ' km', $context );
 
 		$tier = Woo_Envios_Admin::match_tier_by_distance( $distance );
-	
+		
 		// ALWAYS calculate Correios as an option (SuperFrete/PAC/SEDEX)
 		// This allows customers to choose between Flash and Correios
 		$this->calculate_correios_shipping( $package );
 		
 		// If customer is outside local delivery range, don't add Flash option
 		if ( ! $tier ) {
+			$logger->warning( 'Distance ' . $distance . 'km is OUTSIDE configured tiers! Only Correios shown.', $context );
 			Woo_Envios_Logger::distance_out_of_range( $distance, $package['destination'] );
 			return;
 		}
+		
+		$logger->info( 'Distance ' . $distance . 'km matched tier: ' . $tier['label'] . ' @ R$' . $tier['price'], $context );
 
 		// Apply dynamic pricing if enabled
 		$base_price = (float) $tier['price'];
@@ -146,6 +166,8 @@ class Woo_Envios_Shipping_Method extends WC_Shipping_Method {
 		);
 
 		$this->add_rate( $rate );
+		
+		$logger->info( 'Flash delivery rate ADDED: ' . $label . ' @ R$' . round( $final_price, 2 ), $context );
 
 		// Log shipping calculation for debugging
 		Woo_Envios_Logger::shipping_calculated(
