@@ -1,6 +1,14 @@
 ## [3.1.31] - 2025-12-23
 
 
+## [3.1.39] - 2025-12-23
+
+09988b4 - Fix: Implement robust server-side geocoding fallback and normalize postcode signatures
+5e6ff76 - docs: update CHANGELOG.md for v3.1.38 [skip ci]
+
+---
+
+
 ## [3.1.38] - 2025-12-23
 
 99a3e98 - Fix: Relax signature check (remove address_1) to ensure session coordinates are used
