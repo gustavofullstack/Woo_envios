@@ -1,6 +1,14 @@
 ## [3.1.31] - 2025-12-23
 
 
+## [3.2.4] - 2025-12-23
+
+0b8edbb - Feature: Premium Design for Shipping & Auto-Priority for Flash (v3.2.3)
+de038f4 - docs: update CHANGELOG.md for v3.2.3 [skip ci]
+
+---
+
+
 ## [3.2.3] - 2025-12-23
 
 64a820e - Fix: Critical - Require Geocoder manually. Bump v3.2.2
