@@ -1,6 +1,14 @@
 ## [3.1.31] - 2025-12-23
 
 
+## [3.1.36] - 2025-12-23
+
+897f97a - Debug: Add comprehensive logging to diagnose missing Flash delivery
+82816a2 - docs: update CHANGELOG.md for v3.1.35 [skip ci]
+
+---
+
+
 ## [3.1.35] - 2025-12-23
 
 613d166 - Fix: Capturar coordenadas de shipping address + billing address
