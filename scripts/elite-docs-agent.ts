@@ -78,7 +78,7 @@ async function collectContext(targetPath: string): Promise<string> {
 
     let context = "";
     // Prioritize main plugin files and core logic
-    const sortedFiles = files.sort((a, b) => {
+    const sortedFiles = files.sort((a: string, b: string) => {
         if (a.includes('main') || a.endsWith('.php') && !a.includes('/')) return -1;
         return 0;
     });
@@ -109,6 +109,10 @@ const DOC_TYPES = [
     {
         filename: "docs/USER_GUIDE.md",
         prompt: "Generate a comprehensive USER_GUIDE.md for end-users, covering configuration, troubleshooting, and advanced usage scenarios."
+    },
+    {
+        filename: "docs/CONNECTIVITY.md",
+        prompt: "Generate a detailed CONNECTIVITY.md. Document external API integrations (TriqHub License API, Google Maps, WC Native), webhook structures, network timeouts, and error handling strategies. Include a Mermaid sequence diagram for a common integration flow."
     }
 ];
 
