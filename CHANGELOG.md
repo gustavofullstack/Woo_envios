@@ -1,6 +1,14 @@
 ## [3.1.31] - 2025-12-23
 
 
+## [3.2.5] - 2025-12-27
+
+8296144 - feat: Add TriqHub connector for license management and webhook processing.
+393770f - docs: update CHANGELOG.md for v3.2.4 [skip ci]
+
+---
+
+
 ## [3.2.4] - 2025-12-23
 
 0b8edbb - Feature: Premium Design for Shipping & Auto-Priority for Flash (v3.2.3)
