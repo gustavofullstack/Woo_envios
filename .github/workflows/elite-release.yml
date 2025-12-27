@@ -48,8 +48,8 @@ jobs:
           
           # Update Files
           sed -i "s/Version: $CURRENT_VERSION/Version: $NEW_VERSION/" $MAIN_FILE
-          # Update class constant: public const VERSION = '1.2.1';
-          sed -i "s/public const VERSION = '.*';/public const VERSION = '$NEW_VERSION';/" $MAIN_FILE
+          # Update class constant: public const VERSION = '...';
+          sed -i "s/public const VERSION *= '.*';/public const VERSION = '$NEW_VERSION';/" $MAIN_FILE
           
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
           echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
