@@ -44,13 +44,13 @@ if ( ! class_exists( 'TriqHub_Connector' ) ) {
                 define( 'TRIQHUB_MENU_REGISTERED', true );
                 
                 add_menu_page(
-                    'TriqHub',              // Page title
-                    'TriqHub',              // Menu title
-                    'manage_options',       // Capability
-                    'triqhub',              // Menu slug
-                    array( $this, 'render_dashboard_page' ), // Callback
-                    'dashicons-cloud',      // Icon
-                    1                       // Position: ABOVE Dashboard (Position 1)
+                    'TriqHub',
+                    'TriqHub',
+                    'manage_options',
+                    'triqhub',
+                    array( $this, 'render_dashboard_page' ),
+                    'dashicons-cloud',
+                    '0.5'
                 );
             }
 
