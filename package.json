@@ -1,0 +1,16 @@
+{
+  "name": "triqhub-shipping-radius",
+  "version": "1.0.0",
+  "description": "Shipping Radius Plugin for WooCommerce",
+  "main": "index.js",
+  "scripts": {
+    "docs": "ts-node scripts/elite-docs-agent.ts"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "glob": "^10.0.0",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.0.0"
+  },
+  "license": "ISC"
+}
