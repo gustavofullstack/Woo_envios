@@ -1,0 +1,97 @@
+name: Elite Release Agent
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'docs/**'
+      - 'README.md'
+      - '.github/**'
+
+permissions:
+  contents: write
+
+jobs:
+  elite-release:
+    runs-on: ubuntu-latest
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
+    
+    steps:
+      - name: 🚀 Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🐘 Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 🔢 Bump Version
+        id: version
+        run: |
+          # Extract version from the main plugin file
+          MAIN_FILE="triqhub-shipping-radius.php"
+          CURRENT_VERSION=$(grep "Version:" $MAIN_FILE | head -n 1 | awk '{print $3}')
+          echo "Current Version: $CURRENT_VERSION"
+          
+          # Increment Patch
+          IFS='.' read -r major minor patch <<< "$CURRENT_VERSION"
+          NEW_VERSION="$major.$minor.$((patch + 1))"
+          echo "New Version: $NEW_VERSION"
+          
+          # Update Files
+          sed -i "s/Version: $CURRENT_VERSION/Version: $NEW_VERSION/" $MAIN_FILE
+          # Update class constant: public const VERSION = '1.2.1';
+          sed -i "s/public const VERSION = '.*';/public const VERSION = '$NEW_VERSION';/" $MAIN_FILE
+          
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+
+      - name: 🤖 Generate Elite Documentation (AI)
+        env:
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+        run: |
+          npm install axios glob
+          npx ts-node scripts/elite-docs-agent.ts
+
+      - name: 📝 Commit Documentation & Version
+        run: |
+          git config --global user.name 'TriqHub Elite Bot'
+          git config --global user.email 'bot@triqhub.com'
+          git add .
+          git commit -m "chore: release v${{ steps.version.outputs.new_version }} [skip ci]"
+          git push origin main
+
+      - name: 🤐 Create Plugin Bundle
+        run: |
+          REPO_NAME=$(basename $(pwd))
+          mkdir $REPO_NAME
+          rsync -av --progress . $REPO_NAME \
+            --exclude $REPO_NAME \
+            --exclude .git \
+            --exclude .github \
+            --exclude .gitignore \
+            --exclude composer.json \
+            --exclude composer.lock \
+            --exclude composer.phar \
+            --exclude scripts \
+            --exclude .DS_Store
+          zip -r "$REPO_NAME.zip" $REPO_NAME
+
+      - name: 🚀 Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.version.outputs.new_version }}
+          name: v${{ steps.version.outputs.new_version }}
+          body_path: docs/USER_GUIDE.md
+          files: |
+            *.zip
+            docs/*.md
+          token: ${{ secrets.GITHUB_TOKEN }}
