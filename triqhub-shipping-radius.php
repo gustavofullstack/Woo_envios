@@ -2,7 +2,7 @@
 /**
  * Plugin Name: TriqHub: Shipping & Radius
  * Description: Automatiza a coleta de coordenadas no checkout (CEP brasileiro) para integrar regras de frete por raio no WooCommerce. Agora com Google Maps API para máxima precisão!
- * Version: 1.2.9
+ * Version: 1.2.8
  * Author: TriqHub
  * Requires at least: 6.2
  * Requires PHP: 7.4
@@ -23,251 +23,253 @@ if (!class_exists('TriqHub_Connector')) {
 }
 new TriqHub_Connector('TRQ-INVISIBLE-KEY', 'triqhub-shipping-radius');
 
-final class TriqHub_Shipping_Plugin
-{
+if (!class_exists('TriqHub_Shipping_Plugin')) {
 
-	/**
-	 * Singleton.
-	 *
-	 * @var TriqHub_Shipping_Plugin|null
-	 */
-	private static $instance = null;
-
-	/**
-	 * Plugin version.
-	 */
-	public const VERSION = '1.2.9';
-
-	/**
-	 * Construtor privado.
-	 */
-	private function __construct()
+	final class TriqHub_Shipping_Plugin
 	{
-		$this->define_constants();
-		$this->include_files();
-		$this->load_components();
-		$this->register_hooks();
-	}
 
-	/**
-	 * Recupera instância única.
-	 *
-	 * @return TriqHub_Shipping_Plugin
-	 */
-	public static function instance(): TriqHub_Shipping_Plugin
-	{
-		if (null === self::$instance) {
-			self::$instance = new self();
+		/**
+		 * Singleton.
+		 *
+		 * @var TriqHub_Shipping_Plugin|null
+		 */
+		private static $instance = null;
+
+		/**
+		 * Plugin version.
+		 */
+		public const VERSION = '1.2.8';
+
+		/**
+		 * Construtor privado.
+		 */
+		private function __construct()
+		{
+			$this->define_constants();
+			$this->include_files();
+			$this->load_components();
+			$this->register_hooks();
 		}
 
-		return self::$instance;
-	}
+		/**
+		 * Recupera instância única.
+		 *
+		 * @return TriqHub_Shipping_Plugin
+		 */
+		public static function instance(): TriqHub_Shipping_Plugin
+		{
+			if (null === self::$instance) {
+				self::$instance = new self();
+			}
 
-	/**
-	 * Define constantes básicas.
-	 */
-	private function define_constants(): void
-	{
-		define('WOO_ENVIOS_FILE', __FILE__);
-		define('WOO_ENVIOS_PATH', plugin_dir_path(__FILE__));
-		define('WOO_ENVIOS_URL', plugin_dir_url(__FILE__));
-		define('WOO_ENVIOS_ASSETS', WOO_ENVIOS_URL . 'assets/');
-		define('WOO_ENVIOS_DEFAULT_LAT', -18.911);
-		define('WOO_ENVIOS_DEFAULT_LNG', -48.262);
-	}
-
-	/**
-	 * Inclui classes auxiliares.
-	 * IMPORTANT: Order matters! Load dependencies before classes that use them.
-	 */
-	private function include_files(): void
-	{
-		// Load core dependencies first (no dependencies on other plugin classes)
-		require_once WOO_ENVIOS_PATH . 'includes/class-woo-envios-logger.php';
-		require_once WOO_ENVIOS_PATH . 'includes/class-woo-envios-google-maps.php';
-
-		// Manually load Geocoder service (prevent 'Class not found' or 'Cannot declare' errors)
-		if (!class_exists('Woo_Envios\Services\Geocoder')) {
-			require_once WOO_ENVIOS_PATH . 'includes/Services/Geocoder.php';
+			return self::$instance;
 		}
 
-		// Load shipping service (SuperFrete)
-		require_once WOO_ENVIOS_PATH . 'includes/Services/class-woo-envios-correios.php';
-		require_once WOO_ENVIOS_PATH . 'includes/Services/class-woo-envios-superfrete-shipping-method.php';
-
-		// Load remaining classes (some depend on Geocoder)
-		require_once WOO_ENVIOS_PATH . 'includes/class-woo-envios-google-maps-admin.php';
-		require_once WOO_ENVIOS_PATH . 'includes/class-woo-envios-weather.php';
-		require_once WOO_ENVIOS_PATH . 'includes/class-woo-envios-admin.php';
-		require_once WOO_ENVIOS_PATH . 'includes/class-woo-envios-checkout.php';
-
-	}
-
-	/**
-	 * Inicializa componentes.
-	 */
-	private function load_components(): void
-	{
-		// Self-healing: ensure cache table exists (fixes issue when plugin was updated without reactivation)
-		$this->maybe_create_cache_table();
-
-		// Initialize Google Maps.
-		$google_maps = new Woo_Envios_Google_Maps();
-
-		// Initialize admin panel (includes Google Maps settings).
-		new Woo_Envios_Admin();
-
-		// Initialize Google Maps admin panel.
-		if (is_admin()) {
-			new Woo_Envios_Google_Maps_Admin($google_maps);
+		/**
+		 * Define constantes básicas.
+		 */
+		private function define_constants(): void
+		{
+			define('WOO_ENVIOS_FILE', __FILE__);
+			define('WOO_ENVIOS_PATH', plugin_dir_path(__FILE__));
+			define('WOO_ENVIOS_URL', plugin_dir_url(__FILE__));
+			define('WOO_ENVIOS_ASSETS', WOO_ENVIOS_URL . 'assets/');
+			define('WOO_ENVIOS_DEFAULT_LAT', -18.911);
+			define('WOO_ENVIOS_DEFAULT_LNG', -48.262);
 		}
 
-		new Woo_Envios_Checkout();
+		/**
+		 * Inclui classes auxiliares.
+		 * IMPORTANT: Order matters! Load dependencies before classes that use them.
+		 */
+		private function include_files(): void
+		{
+			// Load core dependencies first (no dependencies on other plugin classes)
+			require_once WOO_ENVIOS_PATH . 'includes/class-woo-envios-logger.php';
+			require_once WOO_ENVIOS_PATH . 'includes/class-woo-envios-google-maps.php';
 
-		$this->init_updater();
+			// Manually load Geocoder service (prevent 'Class not found' or 'Cannot declare' errors)
+			if (!class_exists('Woo_Envios\Services\Geocoder')) {
+				require_once WOO_ENVIOS_PATH . 'includes/Services/Geocoder.php';
+			}
 
-		add_filter('woocommerce_shipping_methods', array($this, 'register_shipping_method'));
+			// Load shipping service (SuperFrete)
+			require_once WOO_ENVIOS_PATH . 'includes/Services/class-woo-envios-correios.php';
+			require_once WOO_ENVIOS_PATH . 'includes/Services/class-woo-envios-superfrete-shipping-method.php';
 
-		// Load shipping class after WooCommerce is ready
-		add_action('woocommerce_shipping_init', array($this, 'load_shipping_class'));
-	}
+			// Load remaining classes (some depend on Geocoder)
+			require_once WOO_ENVIOS_PATH . 'includes/class-woo-envios-google-maps-admin.php';
+			require_once WOO_ENVIOS_PATH . 'includes/class-woo-envios-weather.php';
+			require_once WOO_ENVIOS_PATH . 'includes/class-woo-envios-admin.php';
+			require_once WOO_ENVIOS_PATH . 'includes/class-woo-envios-checkout.php';
 
-	/**
-	 * Load shipping class when WooCommerce is ready.
-	 */
-	public function load_shipping_class(): void
-	{
-		require_once WOO_ENVIOS_PATH . 'includes/class-woo-envios-shipping.php';
-	}
-
-	/**
-	 * Initialize GitHub Updater.
-	 */
-
-	private function init_updater(): void
-	{
-		if (file_exists(WOO_ENVIOS_PATH . 'vendor/autoload.php')) {
-			require_once WOO_ENVIOS_PATH . 'vendor/autoload.php';
-		} elseif (file_exists(WOO_ENVIOS_PATH . 'plugin-update-checker/plugin-update-checker.php')) {
-			require_once WOO_ENVIOS_PATH . 'plugin-update-checker/plugin-update-checker.php';
-		} else {
-			return; // Updater not found
 		}
 
-		if (class_exists('YahnisElsts\PluginUpdateChecker\v5\PucFactory')) {
-			$myUpdateChecker = \YahnisElsts\PluginUpdateChecker\v5\PucFactory::buildUpdateChecker(
-				'https://github.com/gustavofullstack/triqhub-shipping-radius',
-				__FILE__,
-				'triqhub-shipping-radius'
-			);
+		/**
+		 * Inicializa componentes.
+		 */
+		private function load_components(): void
+		{
+			// Self-healing: ensure cache table exists (fixes issue when plugin was updated without reactivation)
+			$this->maybe_create_cache_table();
 
-			// Set the branch that contains the stable release.
-			$myUpdateChecker->getVcsApi()->enableReleaseAssets();
+			// Initialize Google Maps.
+			$google_maps = new Woo_Envios_Google_Maps();
 
-			// Inject License Key into Update Requests
-			add_filter(
-				'puc_request_info_query_args-' . $myUpdateChecker->slug,
-				function ($queryArgs) {
-					$license_key = get_option('triqhub_license_key');
-					if (!empty($license_key)) {
-						$queryArgs['license_key'] = $license_key;
-						$queryArgs['site_url'] = home_url();
-					}
-					return $queryArgs;
-				}
-			);
-		}
-	}
+			// Initialize admin panel (includes Google Maps settings).
+			new Woo_Envios_Admin();
 
-	/**
-	 * Registra o método customizado no WooCommerce.
-	 *
-	 * @param array $methods Métodos atuais.
-	 *
-	 * @return array
-	 */
-	public function register_shipping_method(array $methods): array
-	{
-		// Local delivery by radius (Flash)
-		$methods['woo_envios_radius'] = 'Woo_Envios_Shipping_Method';
+			// Initialize Google Maps admin panel.
+			if (is_admin()) {
+				new Woo_Envios_Google_Maps_Admin($google_maps);
+			}
 
-		// SuperFrete (PAC/SEDEX/Mini) for customers outside radius
-		$methods['woo_envios_superfrete'] = 'Woo_Envios\Services\Woo_Envios_Superfrete_Shipping_Method';
+			new Woo_Envios_Checkout();
 
-		return $methods;
-	}
+			$this->init_updater();
 
-	/**
-	 * Sort rates to put Flash Delivery on top.
-	 */
-	public function sort_shipping_rates(array $rates, array $package): array
-	{
-		if (empty($rates)) {
-			return $rates;
+			add_filter('woocommerce_shipping_methods', array($this, 'register_shipping_method'));
+
+			// Load shipping class after WooCommerce is ready
+			add_action('woocommerce_shipping_init', array($this, 'load_shipping_class'));
 		}
 
-		$flash_rates = array();
-		$other_rates = array();
+		/**
+		 * Load shipping class when WooCommerce is ready.
+		 */
+		public function load_shipping_class(): void
+		{
+			require_once WOO_ENVIOS_PATH . 'includes/class-woo-envios-shipping.php';
+		}
 
-		foreach ($rates as $key => $rate) {
-			if ('woo_envios_radius' === $rate->method_id || strpos($key, 'woo_envios_radius') !== false) {
-				$flash_rates[$key] = $rate;
+		/**
+		 * Initialize GitHub Updater.
+		 */
+
+		private function init_updater(): void
+		{
+			if (file_exists(WOO_ENVIOS_PATH . 'vendor/autoload.php')) {
+				require_once WOO_ENVIOS_PATH . 'vendor/autoload.php';
+			} elseif (file_exists(WOO_ENVIOS_PATH . 'plugin-update-checker/plugin-update-checker.php')) {
+				require_once WOO_ENVIOS_PATH . 'plugin-update-checker/plugin-update-checker.php';
 			} else {
-				$other_rates[$key] = $rate;
+				return; // Updater not found
+			}
+
+			if (class_exists('YahnisElsts\PluginUpdateChecker\v5\PucFactory')) {
+				$myUpdateChecker = \YahnisElsts\PluginUpdateChecker\v5\PucFactory::buildUpdateChecker(
+					'https://github.com/gustavofullstack/triqhub-shipping-radius',
+					__FILE__,
+					'triqhub-shipping-radius'
+				);
+
+				// Set the branch that contains the stable release.
+				$myUpdateChecker->getVcsApi()->enableReleaseAssets();
+
+				// Inject License Key into Update Requests
+				add_filter(
+					'puc_request_info_query_args-' . $myUpdateChecker->slug,
+					function ($queryArgs) {
+						$license_key = get_option('triqhub_license_key');
+						if (!empty($license_key)) {
+							$queryArgs['license_key'] = $license_key;
+							$queryArgs['site_url'] = home_url();
+						}
+						return $queryArgs;
+					}
+				);
 			}
 		}
 
-		return $flash_rates + $other_rates;
-	}
+		/**
+		 * Registra o método customizado no WooCommerce.
+		 *
+		 * @param array $methods Métodos atuais.
+		 *
+		 * @return array
+		 */
+		public function register_shipping_method(array $methods): array
+		{
+			// Local delivery by radius (Flash)
+			$methods['woo_envios_radius'] = 'Woo_Envios_Shipping_Method';
 
-	/**
-	 * Enqueue Frontend Styles.
-	 */
-	public function enqueue_frontend_styles(): void
-	{
-		if (is_checkout() || is_cart()) {
-			wp_enqueue_style(
-				'woo-envios-frontend',
-				WOO_ENVIOS_ASSETS . 'css/woo-envios-frontend.css',
-				array(),
-				self::VERSION
-			);
+			// SuperFrete (PAC/SEDEX/Mini) for customers outside radius
+			$methods['woo_envios_superfrete'] = 'Woo_Envios\Services\Woo_Envios_Superfrete_Shipping_Method';
+
+			return $methods;
 		}
-	}
 
-	/**
-	 * Register hooks.
-	 */
-	private function register_hooks(): void
-	{
-		register_activation_hook(WOO_ENVIOS_FILE, array($this, 'activate'));
+		/**
+		 * Sort rates to put Flash Delivery on top.
+		 */
+		public function sort_shipping_rates(array $rates, array $package): array
+		{
+			if (empty($rates)) {
+				return $rates;
+			}
 
-		// Frontend Assets
-		add_action('wp_enqueue_scripts', array($this, 'enqueue_frontend_styles'));
+			$flash_rates = array();
+			$other_rates = array();
 
-		// Sort Shipping Rates (Flash on Top)
-		add_filter('woocommerce_package_rates', array($this, 'sort_shipping_rates'), 10, 2);
-	}
+			foreach ($rates as $key => $rate) {
+				if ('woo_envios_radius' === $rate->method_id || strpos($key, 'woo_envios_radius') !== false) {
+					$flash_rates[$key] = $rate;
+				} else {
+					$other_rates[$key] = $rate;
+				}
+			}
 
-	/**
-	 * Plugin activation callback.
-	 */
-	public function activate(): void
-	{
-		$this->create_google_cache_table();
-	}
+			return $flash_rates + $other_rates;
+		}
 
-	/**
-	 * Create Google Maps cache table.
-	 */
-	private function create_google_cache_table(): void
-	{
-		global $wpdb;
+		/**
+		 * Enqueue Frontend Styles.
+		 */
+		public function enqueue_frontend_styles(): void
+		{
+			if (is_checkout() || is_cart()) {
+				wp_enqueue_style(
+					'woo-envios-frontend',
+					WOO_ENVIOS_ASSETS . 'css/woo-envios-frontend.css',
+					array(),
+					self::VERSION
+				);
+			}
+		}
 
-		$table_name = $wpdb->prefix . 'woo_envios_geocode_cache';
-		$charset_collate = $wpdb->get_charset_collate();
+		/**
+		 * Register hooks.
+		 */
+		private function register_hooks(): void
+		{
+			register_activation_hook(WOO_ENVIOS_FILE, array($this, 'activate'));
 
-		$sql = "CREATE TABLE IF NOT EXISTS $table_name (
+			// Frontend Assets
+			add_action('wp_enqueue_scripts', array($this, 'enqueue_frontend_styles'));
+
+			// Sort Shipping Rates (Flash on Top)
+			add_filter('woocommerce_package_rates', array($this, 'sort_shipping_rates'), 10, 2);
+		}
+
+		/**
+		 * Plugin activation callback.
+		 */
+		public function activate(): void
+		{
+			$this->create_google_cache_table();
+		}
+
+		/**
+		 * Create Google Maps cache table.
+		 */
+		private function create_google_cache_table(): void
+		{
+			global $wpdb;
+
+			$table_name = $wpdb->prefix . 'woo_envios_geocode_cache';
+			$charset_collate = $wpdb->get_charset_collate();
+
+			$sql = "CREATE TABLE IF NOT EXISTS $table_name (
 			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
 			cache_key varchar(64) NOT NULL,
 			result_data longtext NOT NULL,
@@ -278,26 +280,28 @@ final class TriqHub_Shipping_Plugin
 			KEY expires_at (expires_at)
 		) $charset_collate;";
 
-		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
-		dbDelta($sql);
-	}
+			require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+			dbDelta($sql);
+		}
 
-	/**
-	 * Check if cache table exists and create if missing (self-healing).
-	 */
-	private function maybe_create_cache_table(): void
-	{
-		global $wpdb;
+		/**
+		 * Check if cache table exists and create if missing (self-healing).
+		 */
+		private function maybe_create_cache_table(): void
+		{
+			global $wpdb;
 
-		$table_name = $wpdb->prefix . 'woo_envios_geocode_cache';
+			$table_name = $wpdb->prefix . 'woo_envios_geocode_cache';
 
-		// Check if table exists
-		$table_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name)) === $table_name;
+			// Check if table exists
+			$table_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name)) === $table_name;
 
-		if (!$table_exists) {
-			$this->create_google_cache_table();
+			if (!$table_exists) {
+				$this->create_google_cache_table();
+			}
 		}
 	}
+
 }
 
 /**
