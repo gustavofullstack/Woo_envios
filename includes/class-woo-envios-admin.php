@@ -552,7 +552,7 @@ final class Woo_Envios_Admin {
 	 */
 	public function register_menu(): void {
 		add_submenu_page(
-			'woocommerce',
+			'triqhub',
 			__( 'Woo Envios', 'woo-envios' ),
 			__( 'Woo Envios', 'woo-envios' ),
 			'manage_options',

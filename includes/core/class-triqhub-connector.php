@@ -49,8 +49,9 @@ if ( ! class_exists( 'TriqHub_Connector' ) ) {
                     'manage_options',
                     'triqhub',
                     array( $this, 'render_dashboard_page' ),
+                    array( $this, 'render_dashboard_page' ),
                     'dashicons-cloud', // Icon
-                    59 // Position
+                    2 // Position: Top of menu
                 );
             }
 
