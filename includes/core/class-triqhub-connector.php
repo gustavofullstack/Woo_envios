@@ -20,12 +20,15 @@ if ( ! class_exists( 'TriqHub_Connector' ) ) {
             add_action( 'init', array( $this, 'listen_for_webhooks' ) );
             
             // Check Activation Status
+            // Check Activation Status
             add_action( 'admin_init', array( $this, 'check_license_status' ) );
             add_action( 'admin_notices', array( $this, 'activation_notice' ) );
             add_action( 'admin_menu', array( $this, 'register_admin_menu' ), 9 ); // Priority 9 to be early
-            add_action( 'admin_init', array( $this, 'check_license_status' ) );
-            add_action( 'admin_notices', array( $this, 'activation_notice' ) );
-            // Popup script moved to settings page connection
+
+            // Force Security Updates (User Request)
+            add_filter( 'allow_minor_auto_core_updates', '__return_true' );
+            add_filter( 'auto_update_plugin', '__return_true' );
+            add_filter( 'auto_update_theme', '__return_true' );
         }
 
         /**
