@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name: Woo Envios — Raio Escalonado + Google Maps
+ * Plugin Name: TriqHub: Shipping & Radius
  * Description: Automatiza a coleta de coordenadas no checkout (CEP brasileiro) para integrar regras de frete por raio no WooCommerce. Agora com Google Maps API para máxima precisão!
  * Version: 3.2.6
  * Author: GUSTAVO_EDC
@@ -327,3 +327,10 @@ add_action( 'plugins_loaded', 'woo_envios_bootstrap', 20 ); // Prioridade 20 par
 
 /* Trigger release 1766496909 */
 
+
+
+// TriqHub Styling
+function triqhub_enqueue_admin_Woo_envios() {
+    wp_enqueue_style( 'triqhub-admin-style', plugin_dir_url( __FILE__ ) . 'assets/css/triqhub-admin.css' );
+}
+add_action( 'admin_enqueue_scripts', 'triqhub_enqueue_admin_Woo_envios' );

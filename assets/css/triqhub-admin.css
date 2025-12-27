@@ -1,0 +1,117 @@
+:root {
+    --trq-bg: #ffffff;
+    --trq-bg-alt: #fafafa;
+    --trq-text: #111111;
+    --trq-text-muted: #666666;
+    --trq-border: #e4e4e7; /* Zinc-200 */
+    --trq-primary: #000000;
+    --trq-primary-hover: #333333;
+    --trq-radius: 4px;
+    --trq-font: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* TriqHub Generic Admin Wrapper */
+.triqhub-wrap {
+    font-family: var(--trq-font);
+    color: var(--trq-text);
+    background: var(--trq-bg);
+    max-width: 1000px;
+    margin: 20px auto;
+    padding: 40px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05); /* Extremely subtle */
+    border: 1px solid var(--trq-border);
+    border-radius: var(--trq-radius);
+}
+
+.triqhub-header {
+    margin-bottom: 40px;
+    border-bottom: 1px solid var(--trq-border);
+    padding-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.triqhub-header h1 {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--trq-text);
+    margin: 0;
+    letter-spacing: -0.5px;
+}
+
+.triqhub-card {
+    background: var(--trq-bg);
+    border: 1px solid var(--trq-border);
+    border-radius: var(--trq-radius);
+    padding: 24px;
+    margin-bottom: 20px;
+}
+
+.triqhub-card h2 {
+    font-size: 18px;
+    font-weight: 500;
+    margin-top: 0;
+    margin-bottom: 16px;
+    color: var(--trq-text);
+}
+
+/* Inputs */
+.triqhub-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--trq-border);
+    border-radius: var(--trq-radius);
+    font-size: 14px;
+    transition: all 0.2s;
+    background: var(--trq-bg-alt);
+    color: var(--trq-text);
+}
+
+.triqhub-input:focus {
+    outline: none;
+    border-color: var(--trq-primary);
+    background: var(--trq-bg);
+    box-shadow: 0 0 0 1px var(--trq-primary);
+}
+
+/* Buttons */
+.triqhub-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 20px;
+    background: var(--trq-primary);
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 500;
+    border: none;
+    border-radius: var(--trq-radius);
+    cursor: pointer;
+    transition: background 0.2s;
+    text-decoration: none;
+}
+
+.triqhub-btn:hover {
+    background: var(--trq-primary-hover);
+    color: #ffffff;
+}
+
+.triqhub-btn.secondary {
+    background: transparent;
+    border: 1px solid var(--trq-border);
+    color: var(--trq-text);
+}
+
+.triqhub-btn.secondary:hover {
+    background: var(--trq-bg-alt);
+    border-color: var(--trq-text-muted);
+}
+
+/* Toggles / Checkboxes */
+.triqhub-toggle {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 20px;
+}
