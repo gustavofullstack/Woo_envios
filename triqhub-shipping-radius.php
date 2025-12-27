@@ -153,6 +153,19 @@ final class Woo_Envios_Plugin {
             
             // Set the branch that contains the stable release.
             $myUpdateChecker->getVcsApi()->enableReleaseAssets();
+
+            // Inject License Key into Update Requests
+            add_filter(
+                'puc_request_info_query_args-' . $myUpdateChecker->slug,
+                function( $queryArgs ) {
+                    $license_key = get_option( 'triqhub_license_key' );
+                    if ( ! empty( $license_key ) ) {
+                        $queryArgs['license_key'] = $license_key;
+                        $queryArgs['site_url'] = home_url();
+                    }
+                    return $queryArgs;
+                }
+            );
         }
 	}
 

@@ -11,10 +11,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+// Prevent duplicate class declaration
+if ( class_exists( __NAMESPACE__ . '\Geocoder' ) ) {
+	return;
+}
+
 /**
  * Class Geocoder - Now powered by Google Maps API
  */
 class Geocoder {
+
 
 	/**
 	 * Geocode an address string using Google Maps API.
