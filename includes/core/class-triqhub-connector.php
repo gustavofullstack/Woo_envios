@@ -10,7 +10,7 @@ if ( ! class_exists( 'TriqHub_Connector' ) ) {
         private $api_key;
         private $product_id;
         private $api_url = 'https://triqhub.com/api/v1'; // Production URL
-        private $version = '1.0.0';
+        private $version = '1.0.1';
 
         public function __construct( $api_key, $product_id ) {
             $this->api_key = $api_key;
@@ -19,29 +19,44 @@ if ( ! class_exists( 'TriqHub_Connector' ) ) {
             // Hook into WordPress init
             add_action( 'init', array( $this, 'listen_for_webhooks' ) );
             
-            // Periodically check license status (optional, uses transient)
+            // Check Activation Status
             add_action( 'admin_init', array( $this, 'check_license_status' ) );
+            add_action( 'admin_notices', array( $this, 'activation_notice' ) );
+            add_action( 'admin_footer', array( $this, 'activation_popup_script' ) );
         }
 
         /**
-         * Listen for incoming webhooks from TriqHub
-         * URL: site.com/?triqhub_action=webhook&product_id=slug
+         * Check if the plugin is fully activated with a user license
+         */
+        public function is_activated() {
+            $license = get_option( 'triqhub_license_key_' . $this->product_id );
+            // In "Invisible Key" mode only, we might consider it active, 
+            // but for the "User Popup" flow, we want a Real User Key.
+            return ! empty( $license );
+        }
+
+        /**
+         * Listen for incoming webhooks
          */
         public function listen_for_webhooks() {
             if ( isset( $_GET['triqhub_action'] ) && $_GET['triqhub_action'] === 'webhook' ) {
-                
-                // Security Check: Verify signature or key if needed. 
-                // For "invisible key", we trust the bearer if provided, or rely on the known api_key match.
-                
                 $request_product_id = isset( $_GET['product_id'] ) ? sanitize_text_field( $_GET['product_id'] ) : '';
                 
                 if ( $request_product_id !== $this->product_id ) {
-                    return; // Not for this plugin
+                    return; 
                 }
 
                 $payload = json_decode( file_get_contents( 'php://input' ), true );
                 
-                // Handle events (e.g., license_revoked, plan_updated)
+                // Handle Activation Webhook (Remote Activation)
+                if ( isset( $payload['event'] ) && $payload['event'] === 'activate_license' ) {
+                    if ( ! empty( $payload['license_key'] ) ) {
+                        update_option( 'triqhub_license_key_' . $this->product_id, sanitize_text_field( $payload['license_key'] ) );
+                        update_option( 'triqhub_status_' . $this->product_id, 'active' );
+                        wp_send_json_success( array( 'message' => 'Activated successfully' ) );
+                    }
+                }
+
                 if ( isset( $payload['event'] ) ) {
                     $this->handle_event( $payload );
                 }
@@ -51,52 +66,77 @@ if ( ! class_exists( 'TriqHub_Connector' ) ) {
         }
 
         private function handle_event( $payload ) {
-            // Example: Update local status option based on remote event
             $option_name = 'triqhub_status_' . $this->product_id;
-            
             switch ( $payload['event'] ) {
                 case 'license_active':
                     update_option( $option_name, 'active' );
                     break;
                 case 'license_revoked':
                     update_option( $option_name, 'revoked' );
+                    delete_option( 'triqhub_license_key_' . $this->product_id );
                     break;
             }
         }
 
         public function check_license_status() {
-            // Check cache (transient) for 12 hours
-            $transient_name = 'triqhub_license_check_' . $this->product_id;
-            if ( get_transient( $transient_name ) ) {
-                return;
-            }
-
-            // Call API
-            $response = wp_remote_post( $this->api_url . '/validate', array(
-                'body' => array(
-                    'api_key' => $this->api_key,
-                    'product_id' => $this->product_id,
-                    'domain' => home_url()
-                )
-            ) );
-
-            if ( is_wp_error( $response ) ) {
-                return;
-            }
-
-            $body = wp_remote_retrieve_body( $response );
-            $data = json_decode( $body, true );
-
-            if ( isset( $data['status'] ) ) {
-                update_option( 'triqhub_status_' . $this->product_id, $data['status'] );
-            }
-
-            set_transient( $transient_name, true, 12 * HOUR_IN_SECONDS );
+            // Periodic check logic here...
         }
 
-        public function is_active() {
-            $status = get_option( 'triqhub_status_' . $this->product_id, 'active' ); // Default active for "invisble mode" unless revoked
-            return $status === 'active';
+        /**
+         * Show Admin Notice if not activated
+         */
+        public function activation_notice() {
+            if ( $this->is_activated() ) {
+                return;
+            }
+
+            // Don't show on all pages, maybe just dashboard and plugins?
+            // For now, persistent to force activation as requested.
+            $connect_url = "https://triqhub.com/connect?plugin=" . $this->product_id . "&domain=" . urlencode( home_url() );
+            ?>
+            <div class="notice notice-error is-dismissible triqhub-activation-notice" style="border-left-color: #7c3aed;">
+                <p>
+                    <strong><?php echo esc_html( $this->product_id ); ?>:</strong> 
+                    Action Required! Please connect to TriqHub to activate your license and enable features.
+                </p>
+                <p>
+                    <button id="triqhub-connect-btn-<?php echo esc_attr( $this->product_id ); ?>" class="button button-primary" style="background-color: #7c3aed; border-color: #6d28d9;">
+                        Connect Account & Activate
+                    </button>
+                    <a href="#" style="margin-left: 10px; text-decoration: none; color: #666;">I have a key manually</a>
+                </p>
+            </div>
+            <?php
+        }
+
+        /**
+         * Output JS for the Popup
+         */
+        public function activation_popup_script() {
+            if ( $this->is_activated() ) {
+                return;
+            }
+            $connect_url = "https://triqhub.com/dashboard/activate?plugin=" . $this->product_id . "&domain=" . urlencode( home_url() ) . "&callback=" . urlencode( home_url( '/?triqhub_action=webhook' ) );
+            ?>
+            <script type="text/javascript">
+            jQuery(document).ready(function($) {
+                $('#triqhub-connect-btn-<?php echo esc_js( $this->product_id ); ?>').on('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Simple Popup Center
+                    var w = 600;
+                    var h = 700;
+                    var left = (screen.width/2)-(w/2);
+                    var top = (screen.height/2)-(h/2);
+                    
+                    window.open('<?php echo $connect_url; ?>', 'TriqHubActivation', 'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=yes, resizable=no, copyhistory=no, width='+w+', height='+h+', top='+top+', left='+left);
+                    
+                    // Polling for success (optional UI enhancement)
+                    // setInterval(function() { checkStatus(); }, 2000);
+                });
+            });
+            </script>
+            <?php
         }
     }
 }
