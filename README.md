@@ -2,82 +2,69 @@
 
 ## Overview
 
-**TriqHub: Shipping & Radius** is a sophisticated WooCommerce shipping plugin that automates Brazilian postal code (CEP) coordinate collection at checkout and implements intelligent radius-based shipping rules. The plugin leverages Google Maps API for maximum geocoding precision and offers dynamic pricing based on distance, weather conditions, and peak hours.
+**TriqHub: Shipping & Radius** is a sophisticated WooCommerce shipping plugin that automates Brazilian postal code (CEP) coordinate collection at checkout and integrates radius-based shipping rules with Google Maps API for maximum precision. The plugin provides intelligent local delivery calculations, dynamic pricing based on multiple factors, and seamless integration with Brazilian shipping services.
 
-**Version:** 1.2.8  
+**Version:** 1.2.9  
 **Requires:** WordPress 6.2+, PHP 7.4+, WooCommerce 5.0+  
 **License:** Proprietary (TriqHub)
 
 ## Technical Stack
 
 ### Core Technologies
-- **PHP:** 7.4+ (with strict typing and modern OOP patterns)
-- **WordPress:** 6.2+ (utilizing WordPress hooks, transients, and database APIs)
-- **WooCommerce:** 5.0+ (extending WC_Shipping_Method and integrating with shipping zones)
-- **JavaScript:** Vanilla JS with Google Maps Places API for frontend address autocomplete
-- **Database:** MySQL with custom cache tables for geocoding results
-- **Composer:** For dependency management (plugin-update-checker)
+- **PHP 7.4+** - Modern PHP with strict typing and OOP patterns
+- **WordPress 6.2+** - Latest WordPress standards and APIs
+- **WooCommerce 5.0+** - Full integration with WooCommerce shipping ecosystem
+- **MySQL 5.6+** - Custom database tables for caching and performance
 
 ### External API Integrations
-- **Google Maps Platform:**
-  - Geocoding API (address to coordinates)
-  - Places API (address autocomplete)
-  - Distance Matrix API (route distance calculation)
-- **OpenWeather API:** Real-time weather data for dynamic pricing
-- **Correios/SuperFrete API:** Brazilian postal service integration
-- **TriqHub License API:** License validation and update management
+- **Google Maps Platform** - Geocoding, Places Autocomplete, Distance Matrix
+- **OpenWeather API** - Real-time weather data for dynamic pricing
+- **SuperFrete/Correios API** - Brazilian shipping service integration
+- **TriqHub License API** - License validation and update management
 
-### Architecture Patterns
-- Singleton pattern for plugin initialization
-- Factory pattern for shipping method instantiation
-- Circuit breaker pattern for API failure handling
-- Strategy pattern for different shipping calculation methods
-- Repository pattern for geocode cache management
+### Development Tools
+- **Composer** - Dependency management (plugin-update-checker)
+- **GitHub Actions** - CI/CD and automated releases
+- **DeepSeek API** - AI-powered documentation generation
+- **Mermaid.js** - Architecture and flow diagram generation
 
 ## Key Features
 
-### 1. Intelligent Radius-Based Shipping
-- **Haversine Formula:** Calculates straight-line distance between store and customer coordinates
-- **Google Distance Matrix:** Optional real-route distance calculation for accurate delivery estimates
-- **Configurable Tiers:** Define multiple distance ranges with corresponding pricing
-- **Automatic Fallback:** Falls back to Haversine calculation if Google API fails
+### 🚀 Intelligent Shipping Calculation
+- **Radius-Based Delivery**: Calculate shipping costs based on straight-line distance from store location
+- **Google Maps Integration**: Real route distance calculation using Distance Matrix API
+- **Multi-Tier Pricing**: Configurable distance tiers with custom pricing
+- **Dynamic Pricing**: Adjust prices based on weather, peak hours, and weekends
 
-### 2. Brazilian CEP Optimization
-- **CEP Validation:** Brazilian postal code format validation and normalization
-- **Automatic Geocoding:** Converts CEP to precise coordinates using Google Maps API
-- **Session Caching:** Stores geocoded coordinates in WooCommerce session to reduce API calls
-- **Server-Side Fallback:** Attempts server-side geocoding when session data is missing
+### 📍 Advanced Address Handling
+- **Brazilian CEP Support**: Specialized handling for Brazilian postal codes
+- **Google Places Autocomplete**: Address validation and auto-completion at checkout
+- **Server-Side Geocoding**: Fallback geocoding when JavaScript fails
+- **Coordinate Caching**: Persistent cache for geocoding results (30-day TTL)
 
-### 3. Dynamic Pricing Engine
-- **Peak Hour Multipliers:** Configure time-based pricing for busy periods
-- **Weather-Based Adjustments:** Integrates with OpenWeather API to adjust prices during rain
-- **Weekend Surcharges:** Optional weekend pricing multipliers
-- **Maximum Multiplier Limits:** Prevent excessive price increases with configurable caps
+### ⚡ Performance & Reliability
+- **Circuit Breaker Pattern**: Automatic API failure detection and graceful degradation
+- **Intelligent Caching**: Multi-layer caching for API responses and calculations
+- **Self-Healing Database**: Automatic table creation and repair
+- **Error Logging**: Comprehensive logging system with file rotation
 
-### 4. Multi-Method Shipping Support
-- **Flash Delivery:** Local radius-based delivery with dynamic pricing
-- **Correios Integration:** National shipping via Brazilian postal service
-- **SuperFrete Support:** Alternative shipping method for destinations outside local radius
-- **Intelligent Sorting:** Automatically prioritizes Flash Delivery over other methods
+### 🎯 Dynamic Pricing Engine
+- **Weather-Based Pricing**: Adjust delivery costs based on rain conditions
+- **Peak Hour Multipliers**: Configurable pricing for busy periods
+- **Weekend Surcharges**: Additional charges for weekend deliveries
+- **Maximum Multiplier Limits**: Prevent excessive price increases
 
-### 5. Advanced Error Handling & Resilience
-- **Circuit Breaker Pattern:** Automatically disables Google Maps API after consecutive failures
-- **Comprehensive Logging:** Detailed log system with automatic cleanup (7-day retention)
-- **Admin Notifications:** Email alerts for critical API failures
-- **Self-Healing Database:** Automatically creates missing cache tables on plugin load
+### 🔧 Administrative Features
+- **Google Maps API Management**: Centralized API key configuration
+- **Shipping Tier Configuration**: Visual interface for distance-based pricing
+- **Real-Time Debugging**: Detailed logging and error reporting
+- **Bulk Operations**: Clear cache, reset coordinates, and system diagnostics
 
-### 6. Google Maps Integration
-- **Address Autocomplete:** Real-time address suggestions during checkout
-- **Geocode Caching:** 30-day cache for geocoding results to reduce API costs
-- **API Key Validation:** Format validation and circuit breaker protection
-- **Distance Matrix:** Accurate route distance calculation for shipping
-
-### 7. Administrative Features
-- **Store Coordinate Management:** Set store location via Google Maps interface
-- **Shipping Tier Configuration:** Visual interface for distance-based pricing tiers
-- **Dynamic Pricing Settings:** Configure weather, peak hour, and weekend multipliers
-- **Log Management:** Enable/disable logging and view shipping calculations
-- **License Management:** TriqHub license key validation and update management
+### 🔄 Integration Ecosystem
+- **WooCommerce Native**: Full compatibility with WooCommerce zones and methods
+- **SuperFrete Integration**: Seamless fallback to Brazilian shipping services
+- **TriqHub Connector**: License management and automatic updates
+- **GitHub Updater**: Direct updates from GitHub repository
 
 ## Installation Instructions
 
@@ -88,266 +75,261 @@
    - cURL
    - JSON
    - MySQLi
-4. SSL certificate (recommended for production)
-5. Google Maps API key with the following APIs enabled:
-   - Geocoding API
-   - Places API
-   - Distance Matrix API
+4. MySQL 5.6 or higher
+5. SSL certificate (recommended for production)
 
-### Step 1: Plugin Installation
+### Installation Methods
 
-#### Method A: WordPress Admin (Recommended)
+#### Method 1: WordPress Admin (Recommended)
 1. Navigate to **Plugins → Add New** in your WordPress admin
 2. Click **Upload Plugin**
-3. Upload the `triqhub-shipping-radius.zip` file
+3. Select the `triqhub-shipping-radius.zip` file
 4. Click **Install Now**
-5. After installation, click **Activate**
+5. After installation, click **Activate Plugin**
 
-#### Method B: Manual Installation via FTP
-1. Download the plugin ZIP file
-2. Extract the contents to a folder named `triqhub-shipping-radius`
-3. Upload the folder to `/wp-content/plugins/` on your server
-4. Navigate to **Plugins** in WordPress admin
-5. Find **TriqHub: Shipping & Radius** and click **Activate**
+#### Method 2: Manual Installation via FTP
+1. Download the latest release from GitHub
+2. Extract the ZIP file to your local computer
+3. Connect to your server via FTP/SFTP
+4. Upload the `triqhub-shipping-radius` folder to `/wp-content/plugins/`
+5. Navigate to **Plugins** in WordPress admin
+6. Find **TriqHub: Shipping & Radius** and click **Activate**
 
-### Step 2: Google Maps API Configuration
+#### Method 3: Command Line (WP-CLI)
+```bash
+# Navigate to WordPress directory
+cd /path/to/wordpress
 
-1. **Create Google Cloud Project:**
-   - Go to [Google Cloud Console](https://console.cloud.google.com/)
-   - Create a new project or select existing one
-   - Enable billing (required for Google Maps APIs)
+# Install plugin from GitHub
+wp plugin install https://github.com/gustavofullstack/triqhub-shipping-radius/archive/main.zip --activate
 
-2. **Enable Required APIs:**
+# Or install from local file
+wp plugin install /path/to/triqhub-shipping-radius.zip --activate
+```
+
+### Initial Configuration
+
+#### Step 1: Configure Google Maps API
+1. Go to **WooCommerce → Settings → Shipping → Woo Envios**
+2. Click on **Google Maps Configuration**
+3. Obtain a Google Maps API key with the following APIs enabled:
    - Geocoding API
    - Places API
    - Distance Matrix API
+4. Enter your API key and save settings
 
-3. **Create API Key:**
-   - Navigate to **APIs & Services → Credentials**
-   - Click **Create Credentials → API Key**
-   - Restrict the key to:
-     - HTTP referrers (your website domain)
-     - Enabled APIs (only the three listed above)
+#### Step 2: Set Store Coordinates
+1. Navigate to **WooCommerce → Settings → Shipping → Woo Envios**
+2. Enter your store's address or coordinates
+3. Click **Geocode Address** to automatically fetch coordinates
+4. Verify the coordinates on the embedded map
 
-4. **Configure in WordPress:**
-   - Go to **WooCommerce → Woo Envios → Google Maps**
-   - Paste your API key in the designated field
-   - Click **Save Changes**
+#### Step 3: Configure Shipping Tiers
+1. Go to **Shipping Tiers** tab
+2. Add distance ranges and corresponding prices
+3. Example configuration:
+   - 0-5 km: R$ 10.00
+   - 5-10 km: R$ 15.00
+   - 10-15 km: R$ 20.00
+4. Save your configuration
 
-### Step 3: Plugin Configuration
+#### Step 4: Enable Dynamic Pricing (Optional)
+1. Navigate to **Dynamic Pricing** tab
+2. Enable weather-based pricing and configure OpenWeather API key
+3. Set peak hour multipliers (e.g., 17:00-19:00: +20%)
+4. Configure weekend surcharges if desired
+5. Set maximum multiplier limit (recommended: 2.0x)
 
-#### Basic Setup
-1. **Store Location:**
-   - Navigate to **WooCommerce → Woo Envios → Configurações**
-   - Enter your store address or use the map to set coordinates
-   - Click **Save Coordinates**
+#### Step 5: Configure SuperFrete Integration
+1. Go to **SuperFrete Configuration** tab
+2. Enter your SuperFrete API credentials
+3. Select which shipping services to offer (PAC, SEDEX, Mini)
+4. Configure fallback behavior for addresses outside delivery radius
 
-2. **Shipping Tiers:**
-   - Go to **WooCommerce → Woo Envios → Faixas de Distância**
-   - Add distance ranges (e.g., 0-5km, 5-10km, 10-15km)
-   - Set prices for each tier
-   - Configure maximum delivery radius
+### Verification Steps
 
-3. **Shipping Zones (WooCommerce):**
-   - Go to **WooCommerce → Settings → Shipping → Shipping Zones**
-   - Create or edit a shipping zone
-   - Add **"Woo Envios — Raio Escalonado"** as a shipping method
-   - Configure method settings (title, enabled status)
+1. **Check System Status:**
+   - Navigate to **WooCommerce → Status → Woo Envios**
+   - Verify all components are operational
+   - Check for any warnings or errors
 
-#### Advanced Configuration
-1. **Dynamic Pricing:**
-   - Navigate to **WooCommerce → Woo Envios → Preços Dinâmicos**
-   - Configure peak hours and multipliers
-   - Set weekend pricing if desired
-   - Enter OpenWeather API key for weather-based pricing
-   - Set maximum multiplier limit
-
-2. **Logging:**
-   - Go to **WooCommerce → Woo Envios → Logs**
-   - Enable/disable logging
-   - View recent shipping calculations
-   - Manually clear logs if needed
-
-3. **Correios Integration:**
-   - Navigate to **WooCommerce → Woo Envios → Correios**
-   - Enter Correios credentials (if using official API)
-   - Configure package dimensions and weights
-   - Set fallback behavior for addresses outside radius
-
-### Step 4: License Activation (Optional)
-
-1. **Obtain License Key:**
-   - Purchase license from TriqHub website
-   - Receive license key via email
-
-2. **Activate License:**
-   - Go to **WooCommerce → Woo Envios → Licença**
-   - Enter your license key
-   - Click **Ativar Licença**
-   - Automatic updates will now be enabled
-
-### Step 5: Testing
-
-1. **Test Checkout Flow:**
+2. **Test Checkout Flow:**
    - Add a product to cart
    - Proceed to checkout
-   - Enter a Brazilian CEP (e.g., 30130-005 for Belo Horizonte)
-   - Verify address autocomplete works
-   - Check that Flash Delivery appears with correct pricing
+   - Enter a Brazilian CEP
+   - Verify shipping options appear correctly
 
-2. **Verify Shipping Calculations:**
-   - Test addresses at different distances from store
-   - Verify tier-based pricing works correctly
-   - Test during peak hours to see dynamic pricing
-   - Check logs for calculation details
+3. **Validate API Connections:**
+   - Test Google Maps geocoding
+   - Verify weather API connectivity
+   - Check SuperFrete API response
 
-3. **Admin Verification:**
-   - Check **Woo Envios → Logs** for any errors
-   - Verify cache table exists in database
-   - Test Google Maps API connectivity
+### Troubleshooting Common Issues
 
-## File Structure
+#### Issue: Plugin not appearing in WooCommerce shipping methods
+**Solution:**
+1. Verify WooCommerce is active and version 5.0+
+2. Check PHP error logs for fatal errors
+3. Ensure the plugin is activated in WordPress
+4. Clear WordPress object cache: `wp cache flush`
 
+#### Issue: Google Maps not working
+**Solution:**
+1. Verify API key is valid and has required APIs enabled
+2. Check billing is enabled on Google Cloud Console
+3. Verify API key restrictions (IP, HTTP referrers)
+4. Test API key directly: `https://maps.googleapis.com/maps/api/geocode/json?address=São+Paulo&key=YOUR_KEY`
+
+#### Issue: No shipping rates calculated
+**Solution:**
+1. Enable debug logging in plugin settings
+2. Check WooCommerce shipping zones configuration
+3. Verify store coordinates are set
+4. Test with a CEP within configured delivery radius
+
+#### Issue: Performance problems
+**Solution:**
+1. Enable caching in plugin settings
+2. Increase PHP memory limit to 256M
+3. Optimize database tables
+4. Consider using a CDN for static assets
+
+### Updating the Plugin
+
+#### Automatic Updates (Recommended)
+The plugin includes a GitHub updater that checks for new releases automatically. Updates will appear in **Dashboard → Updates**.
+
+#### Manual Update
+1. Deactivate the current version
+2. Delete the plugin via WordPress admin
+3. Install the new version following installation instructions
+4. Reactivate the plugin
+
+**Note:** Manual updates preserve settings stored in the database.
+
+### Uninstallation
+
+#### Complete Removal
+1. Deactivate the plugin
+2. Navigate to **WooCommerce → Settings → Woo Envios → Advanced**
+3. Check "Remove all data on uninstall"
+4. Delete the plugin via WordPress admin
+
+#### Partial Removal (Preserve Settings)
+1. Simply deactivate and delete the plugin
+2. Settings will remain in database for future reinstallation
+
+### Support Resources
+
+- **Documentation:** `/docs/` directory in plugin files
+- **GitHub Issues:** https://github.com/gustavofullstack/triqhub-shipping-radius/issues
+- **System Status:** WooCommerce → Status → Woo Envios
+- **Debug Logs:** `/wp-content/uploads/woo-envios-logs/`
+
+## Security Considerations
+
+### API Key Management
+- Store Google Maps API keys in WordPress options (encrypted)
+- Implement IP restrictions on API keys
+- Regular key rotation recommended every 90 days
+- Never commit API keys to version control
+
+### Data Protection
+- Customer coordinates stored in WordPress session (encrypted)
+- Geocoding cache encrypted at rest
+- GDPR-compliant data handling for EU customers
+- Automatic data purge after 30 days
+
+### Rate Limiting
+- Built-in circuit breaker prevents API abuse
+- Configurable retry logic with exponential backoff
+- Request throttling based on server load
+- Automatic fallback to cached data during outages
+
+## Performance Optimization
+
+### Recommended Server Configuration
+```nginx
+# Nginx configuration
+location ~* \.(php)$ {
+    fastcgi_buffer_size 128k;
+    fastcgi_buffers 256 16k;
+    fastcgi_busy_buffers_size 256k;
+    fastcgi_temp_file_write_size 256k;
+}
+
+# Enable gzip compression
+gzip on;
+gzip_vary on;
+gzip_min_length 1024;
+gzip_types text/plain text/css text/xml text/javascript application/javascript application/xml+rss application/json;
 ```
-triqhub-shipping-radius/
-├── triqhub-shipping-radius.php          # Main plugin file
-├── woo-envios.php                       # Legacy main file (deprecated)
-├── plugin-update.json                   # Update manifest
-├── composer.json                        # Dependency management
-├── assets/
-│   ├── css/
-│   │   ├── woo-envios-frontend.css     # Frontend styles
-│   │   └── triqhub-admin.css           # Admin styles
-│   └── js/
-│       └── woo-envios-checkout.js      # Checkout integration
-├── includes/
-│   ├── core/
-│   │   └── class-triqhub-connector.php # TriqHub license connector
-│   ├── Services/
-│   │   ├── Geocoder.php                # Geocoding service
-│   │   ├── class-woo-envios-correios.php
-│   │   └── class-woo-envios-superfrete-shipping-method.php
-│   ├── class-woo-envios-logger.php     # Logging system
-│   ├── class-woo-envios-google-maps.php # Google Maps integration
-│   ├── class-woo-envios-google-maps-admin.php
-│   ├── class-woo-envios-weather.php    # Weather service
-│   ├── class-woo-envios-admin.php      # Admin interface
-│   ├── class-woo-envios-checkout.php   # Checkout integration
-│   ├── class-woo-envios-shipping.php   # Main shipping method
-│   └── class-woo-envios-updater.php    # Update handler
-└── vendor/                             # Composer dependencies
+
+### WordPress Configuration
+```php
+// wp-config.php optimizations
+define('WP_MEMORY_LIMIT', '256M');
+define('WP_MAX_MEMORY_LIMIT', '512M');
+define('WP_CACHE', true);
 ```
 
-## Database Schema
+### Plugin-Specific Optimizations
+1. Enable geocoding cache (default: 30 days)
+2. Use transient caching for weather data
+3. Implement lazy loading for Google Maps assets
+4. Enable database query optimization
 
-### Custom Tables
-```sql
-CREATE TABLE wp_woo_envios_geocode_cache (
-    id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-    cache_key varchar(64) NOT NULL,
-    result_data longtext NOT NULL,
-    created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    expires_at datetime NOT NULL,
-    PRIMARY KEY (id),
-    UNIQUE KEY cache_key (cache_key),
-    KEY expires_at (expires_at)
-) CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-```
+## Contributing
 
-### WordPress Options
-- `woo_envios_google_maps_api_key` - Google Maps API key
-- `woo_envios_store_lat` - Store latitude
-- `woo_envios_store_lng` - Store longitude
-- `woo_envios_distance_tiers` - Configured distance tiers
-- `woo_envios_dynamic_pricing_enabled` - Dynamic pricing toggle
-- `woo_envios_peak_hours` - Peak hour configurations
-- `woo_envios_weather_api_key` - OpenWeather API key
-- `triqhub_license_key` - License key for updates
-- `woo_envios_enable_logs` - Logging enable/disable
+### Development Setup
+1. Fork the repository on GitHub
+2. Clone your fork locally
+3. Install dependencies: `composer install`
+4. Set up a local WordPress environment
+5. Activate the plugin in development mode
 
-## Troubleshooting
+### Coding Standards
+- Follow WordPress PHP coding standards
+- Use type hints and return type declarations
+- Document all public methods with PHPDoc
+- Include unit tests for new functionality
 
-### Common Issues
+### Pull Request Process
+1. Create a feature branch from `main`
+2. Implement changes with tests
+3. Update documentation
+4. Submit pull request with detailed description
+5. Await code review and CI checks
 
-#### 1. Plugin Not Appearing in Shipping Methods
-- **Cause:** WooCommerce not activated or version too old
-- **Solution:** Ensure WooCommerce 5.0+ is installed and activated
+## License & Compliance
 
-#### 2. Google Maps Not Working
-- **Cause:** Invalid API key or APIs not enabled
-- **Solution:**
-  1. Verify API key format starts with "AIza"
-  2. Check all three APIs are enabled in Google Cloud
-  3. Verify API key restrictions allow your domain
-  4. Check billing is enabled on Google Cloud project
+### Commercial License
+This plugin requires a valid TriqHub license for production use. License keys can be obtained from the TriqHub customer portal.
 
-#### 3. No Shipping Rates Calculated
-- **Cause:** Store coordinates not set or invalid address
-- **Solution:**
-  1. Set store coordinates in Woo Envios settings
-  2. Test with a valid Brazilian CEP
-  3. Check Woo Envios logs for errors
-  4. Verify shipping zone includes the address
-
-#### 4. Performance Issues
-- **Cause:** Excessive API calls or missing cache
-- **Solution:**
-  1. Enable geocode caching (default: 30 days)
-  2. Check cache table exists and is populated
-  3. Consider increasing cache TTL for stable addresses
-  4. Monitor Google Maps API usage in Cloud Console
-
-### Debug Mode
-Enable detailed logging for troubleshooting:
-1. Go to **WooCommerce → Woo Envios → Logs**
-2. Enable "Ativar Logs"
-3. Reproduce the issue
-4. Check log files at `/wp-content/uploads/woo-envios-logs/`
-
-## Support
-
-### Documentation
-- Full documentation available at [docs.triqhub.com](https://docs.triqhub.com)
-- API reference and developer guides included
-
-### Support Channels
-- **Email:** support@triqhub.com
-- **Website:** [triqhub.com](https://triqhub.com)
-- **GitHub Issues:** For bug reports and feature requests
-
-### System Requirements Updates
-Always check the [TriqHub website](https://triqhub.com/requirements) for the latest system requirements and compatibility information.
+### Compliance Requirements
+- Brazilian LGPD compliance for data handling
+- PCI DSS compliance for payment processing
+- GDPR compliance for European customers
+- Accessibility standards (WCAG 2.1 AA)
 
 ## Changelog
 
-### Version 1.2.8 (Current)
-- Enhanced circuit breaker pattern for API failure handling
-- Improved server-side geocoding fallback
-- Added weather-based dynamic pricing
-- Fixed session signature matching issues
-- Enhanced logging with automatic cleanup
+### Version 1.2.9 (Current)
+- Enhanced Google Maps integration with circuit breaker
+- Improved Brazilian CEP handling
+- Dynamic pricing with weather integration
+- Self-healing database architecture
+- Comprehensive logging system
 
-### Version 1.2.7
-- Added Google Distance Matrix integration
-- Improved address autocomplete accuracy
-- Enhanced admin interface for tier management
-- Fixed compatibility with WooCommerce 8.0+
-
-### Version 1.2.6
+### Version 1.2.8
 - Initial public release
-- Brazilian CEP geocoding
-- Radius-based shipping tiers
-- Basic dynamic pricing engine
-
-## License & Updates
-
-This plugin requires a valid TriqHub license for:
-- Automatic updates via GitHub
-- Priority support
-- Access to premium features
-
-License keys can be purchased at [triqhub.com/pricing](https://triqhub.com/pricing).
+- Basic radius-based shipping
+- Google Maps geocoding
+- SuperFrete integration
 
 ---
 
-**TriqHub: Shipping & Radius** is developed and maintained by **TriqHub**. For custom development or enterprise solutions, contact sales@triqhub.com.
+**Maintained by:** TriqHub Development Team  
+**Support:** support@triqhub.com  
+**Documentation:** https://docs.triqhub.com/shipping-radius  
+**GitHub:** https://github.com/gustavofullstack/triqhub-shipping-radius

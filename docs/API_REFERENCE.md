@@ -2,438 +2,434 @@
 
 ## Overview
 
-This document provides comprehensive technical documentation for the TriqHub Shipping & Radius plugin's public API, including WordPress hooks, filters, class methods, and internal API routes. The plugin extends WooCommerce with Brazilian CEP-based coordinate collection, radius-based shipping rules, and Google Maps integration.
+This document provides comprehensive technical documentation for the TriqHub Shipping & Radius WordPress plugin. It covers all public APIs, WordPress hooks, filters, and internal interfaces available for developers.
 
 ## WordPress Hooks & Filters
 
 ### Actions
 
-#### `woo_envios_bootstrap`
-**Priority:** 20 (runs after WooCommerce loads)  
-**Description:** Main plugin initialization hook. Verifies WooCommerce compatibility and loads the plugin instance.  
-**Location:** `triqhub-shipping-radius.php`  
+#### `woocommerce_shipping_init`
+**Priority:** Default (10)  
 **Parameters:** None  
-**Returns:** `void`
-
-#### `admin_notices`
-**Triggered by:** `woo_envios_bootstrap` when WooCommerce is missing or outdated  
-**Description:** Displays admin warnings when WooCommerce is not active or version is incompatible.  
-**Parameters:** None  
-**Returns:** `void`
+**Description:** Initializes the shipping method classes when WooCommerce is ready. Used by `TriqHub_Shipping_Plugin::load_shipping_class()` to load the main shipping class.
 
 #### `plugins_loaded`
 **Priority:** 20  
-**Description:** Triggers plugin bootstrap after all plugins are loaded.  
+**Callback:** `woo_envios_bootstrap()`  
 **Parameters:** None  
-**Returns:** `void`
+**Description:** Main plugin initialization hook. Verifies WooCommerce compatibility and loads the plugin instance.
+
+#### `admin_notices`
+**Priority:** Default (10)  
+**Parameters:** None  
+**Description:** Displays admin notices for missing dependencies:
+- WooCommerce not active
+- WooCommerce version too old
+- Fatal errors during plugin initialization
 
 #### `wp_enqueue_scripts`
-**Hook:** `wp_enqueue_scripts`  
+**Priority:** Default (10)  
 **Callback:** `TriqHub_Shipping_Plugin::enqueue_frontend_styles()`  
-**Description:** Enqueues frontend CSS styles on checkout and cart pages.  
 **Parameters:** None  
-**Returns:** `void`
+**Description:** Enqueues frontend CSS styles on checkout and cart pages.
 
 #### `admin_enqueue_scripts`
-**Hook:** `admin_enqueue_scripts`  
+**Priority:** Default (10)  
 **Callback:** `triqhub_enqueue_admin_Woo_envios()`  
-**Description:** Enqueues TriqHub admin styling.  
 **Parameters:** None  
-**Returns:** `void`
+**Description:** Enqueues TriqHub admin styling.
 
-#### `woocommerce_shipping_init`
-**Hook:** `woocommerce_shipping_init`  
-**Callback:** `TriqHub_Shipping_Plugin::load_shipping_class()`  
-**Description:** Loads shipping class when WooCommerce shipping is initialized.  
-**Parameters:** None  
-**Returns:** `void`
-
-#### `woocommerce_update_options_shipping_woo_envios_radius_{instance_id}`
-**Hook:** Dynamic hook based on instance ID  
+#### `woocommerce_update_options_shipping_{$this->id}_{$this->instance_id}`
+**Priority:** Default (10)  
 **Callback:** `Woo_Envios_Shipping_Method::process_admin_options()`  
-**Description:** Processes admin options for shipping method instances.  
 **Parameters:** None  
-**Returns:** `void`
+**Description:** Handles shipping method settings updates in WooCommerce admin.
+
+#### `upgrader_process_complete`
+**Priority:** Default (10)  
+**Callback:** `Woo_Envios_Updater::track_update()`  
+**Parameters:** 
+- `$upgrader_object` (WP_Upgrader): The upgrader instance
+- `$options` (array): Update options array  
+**Description:** Optional tracking hook for plugin updates (currently placeholder implementation).
 
 ### Filters
 
 #### `woocommerce_shipping_methods`
-**Hook:** `woocommerce_shipping_methods`  
+**Priority:** Default (10)  
 **Callback:** `TriqHub_Shipping_Plugin::register_shipping_method()`  
-**Description:** Registers custom shipping methods with WooCommerce.  
-**Parameters:**
-- `array $methods`: Existing shipping methods array
-- **Returns:** `array` Modified shipping methods array
+**Parameters:** 
+- `$methods` (array): Current shipping methods array  
+**Returns:** array - Modified shipping methods array  
+**Description:** Registers custom shipping methods with WooCommerce:
+- `woo_envios_radius`: Local delivery by radius (Flash delivery)
+- `woo_envios_superfrete`: SuperFrete integration (PAC/SEDEX/Mini)
 
 #### `woocommerce_package_rates`
-**Hook:** `woocommerce_package_rates`  
+**Priority:** 10  
 **Callback:** `TriqHub_Shipping_Plugin::sort_shipping_rates()`  
-**Description:** Sorts shipping rates to display Flash Delivery (radius-based) on top.  
-**Parameters:**
-- `array $rates`: Current shipping rates
-- `array $package`: WooCommerce package data
-- **Returns:** `array` Sorted shipping rates
+**Parameters:** 
+- `$rates` (array): Shipping rates array
+- `$package` (array): WooCommerce package data  
+**Returns:** array - Sorted shipping rates array  
+**Description:** Sorts shipping rates to prioritize Flash delivery (woo_envios_radius) over other methods.
 
 #### `puc_request_info_query_args-{slug}`
-**Hook:** `puc_request_info_query_args-triqhub-shipping-radius`  
+**Priority:** Default (10)  
 **Callback:** Anonymous function in `TriqHub_Shipping_Plugin::init_updater()`  
-**Description:** Injects license key and site URL into update requests for GitHub updater.  
-**Parameters:**
-- `array $queryArgs`: Existing query arguments
-- **Returns:** `array` Modified query arguments with license data
+**Parameters:** 
+- `$queryArgs` (array): Query arguments for update checker  
+**Returns:** array - Modified query arguments  
+**Description:** Injects license key and site URL into GitHub update requests for license validation.
 
 #### `pre_set_site_transient_update_plugins`
-**Hook:** `pre_set_site_transient_update_plugins`  
+**Priority:** Default (10)  
 **Callback:** `Woo_Envios_Updater::check_update()`  
-**Description:** Checks for plugin updates from remote JSON.  
-**Parameters:**
-- `object $transient`: Update transient object
-- **Returns:** `object` Modified transient with update data
+**Parameters:** 
+- `$transient` (object): Update transient object  
+**Returns:** object - Modified transient object  
+**Description:** Checks for plugin updates from remote JSON file and adds update information to the transient.
 
 #### `plugins_api`
-**Hook:** `plugins_api`  
+**Priority:** 10  
 **Callback:** `Woo_Envios_Updater::check_info()`  
-**Description:** Provides plugin information for "View Details" popup.  
-**Parameters:**
-- `mixed $res`: Existing result
-- `string $action`: API action
-- `object $args`: Request arguments
-- **Returns:** `object|mixed` Plugin information object or original result
+**Parameters:** 
+- `$res` (mixed): Original response
+- `$action` (string): API action
+- `$args` (object): API arguments  
+**Returns:** object|mixed - Plugin information object or original response  
+**Description:** Provides plugin information for the "View Details" popup in WordPress admin.
 
-#### `upgrader_process_complete`
-**Hook:** `upgrader_process_complete`  
-**Callback:** `Woo_Envios_Updater::track_update()`  
-**Description:** Tracks plugin update completion (currently placeholder).  
-**Parameters:**
-- `object $upgrader_object`: Upgrader object
-- `array $options`: Update options
-- **Returns:** `void`
-
-## Core Classes & Public Methods
+## Public Classes & Methods
 
 ### TriqHub_Shipping_Plugin (Main Plugin Class)
 
 #### `TriqHub_Shipping_Plugin::instance(): TriqHub_Shipping_Plugin`
-**Description:** Singleton pattern - retrieves the single plugin instance.  
-**Parameters:** None  
-**Returns:** `TriqHub_Shipping_Plugin` Plugin instance
+**Access:** public static  
+**Returns:** `TriqHub_Shipping_Plugin` - Singleton instance  
+**Description:** Returns the singleton instance of the main plugin class.
 
 #### `TriqHub_Shipping_Plugin::register_shipping_method(array $methods): array`
-**Description:** Registers custom shipping methods with WooCommerce.  
-**Parameters:**
-- `array $methods`: Current shipping methods
-- **Returns:** `array` Methods with added `woo_envios_radius` and `woo_envios_superfrete`
+**Access:** public  
+**Parameters:** 
+- `$methods` (array): Current shipping methods  
+**Returns:** array - Modified shipping methods  
+**Description:** Registers custom shipping methods with WooCommerce.
+
+#### `TriqHub_Shipping_Plugin::load_shipping_class(): void`
+**Access:** public  
+**Parameters:** None  
+**Returns:** void  
+**Description:** Loads the main shipping class file when WooCommerce is ready.
 
 #### `TriqHub_Shipping_Plugin::sort_shipping_rates(array $rates, array $package): array`
-**Description:** Sorts shipping rates to prioritize Flash Delivery.  
-**Parameters:**
-- `array $rates`: Current shipping rates
-- `array $package`: WooCommerce package data
-- **Returns:** `array` Sorted rates with Flash Delivery first
+**Access:** public  
+**Parameters:** 
+- `$rates` (array): Shipping rates
+- `$package` (array): Package data  
+**Returns:** array - Sorted rates  
+**Description:** Sorts shipping rates to display Flash delivery first.
 
 #### `TriqHub_Shipping_Plugin::enqueue_frontend_styles(): void`
-**Description:** Enqueues frontend CSS for checkout and cart pages.  
+**Access:** public  
 **Parameters:** None  
-**Returns:** `void`
+**Returns:** void  
+**Description:** Enqueues frontend CSS styles.
 
 #### `TriqHub_Shipping_Plugin::activate(): void`
-**Description:** Plugin activation callback - creates Google Maps cache table.  
+**Access:** public  
 **Parameters:** None  
-**Returns:** `void`
+**Returns:** void  
+**Description:** Plugin activation callback. Creates the geocode cache table.
 
-### Woo_Envios_Shipping_Method (Radius-Based Shipping)
+### Woo_Envios_Shipping_Method (Shipping Method Class)
 
-#### `Woo_Envios_Shipping_Method::__construct(int $instance_id = 0)`
-**Description:** Constructor for radius-based shipping method.  
-**Parameters:**
-- `int $instance_id`: Shipping method instance ID (default: 0)
-- **Returns:** `void`
+#### `Woo_Envios_Shipping_Method::__construct($instance_id = 0)`
+**Access:** public  
+**Parameters:** 
+- `$instance_id` (int): Shipping method instance ID  
+**Description:** Constructor for the radius-based shipping method.
 
 #### `Woo_Envios_Shipping_Method::init(): void`
-**Description:** Initializes shipping method fields and hooks.  
+**Access:** public  
 **Parameters:** None  
-**Returns:** `void`
+**Returns:** void  
+**Description:** Initializes form fields and hooks.
 
-#### `Woo_Envios_Shipping_Method::calculate_shipping(array $package = []): void`
-**Description:** Calculates shipping based on distance from store coordinates.  
-**Parameters:**
-- `array $package`: WooCommerce package data
-- **Returns:** `void`
+#### `Woo_Envios_Shipping_Method::calculate_shipping($package = array()): void`
+**Access:** public  
+**Parameters:** 
+- `$package` (array): WooCommerce package data  
+**Returns:** void  
+**Description:** Main shipping calculation logic. Calculates distance-based pricing with dynamic multipliers.
 
 #### `Woo_Envios_Shipping_Method::init_form_fields(): void`
-**Description:** Defines shipping method form fields (empty in this implementation).  
+**Access:** public  
 **Parameters:** None  
-**Returns:** `void`
+**Returns:** void  
+**Description:** Initializes settings form fields (empty implementation for modal support).
 
-### Woo_Envios_Google_Maps (Google Maps API Integration)
+### Woo_Envios_Google_Maps (Google Maps API)
 
 #### `Woo_Envios_Google_Maps::is_configured(): bool`
-**Description:** Checks if Google Maps API is properly configured.  
+**Access:** public  
 **Parameters:** None  
-**Returns:** `bool` True if API key is valid
+**Returns:** bool - True if API is properly configured  
+**Description:** Checks if Google Maps API is properly configured with valid API key.
 
 #### `Woo_Envios_Google_Maps::calculate_distance(string $origin, string $destination): array|WP_Error`
-**Description:** Calculates route distance using Google Distance Matrix API.  
-**Parameters:**
-- `string $origin`: Origin coordinates "lat,lng"
-- `string $destination`: Destination coordinates "lat,lng"
-- **Returns:** `array|WP_Error` Distance data or error object
+**Access:** public  
+**Parameters:** 
+- `$origin` (string): Origin coordinates "lat,lng"
+- `$destination` (string): Destination coordinates "lat,lng"  
+**Returns:** array|WP_Error - Distance data or error  
+**Description:** Calculates route distance using Google Distance Matrix API.
 
 ### Woo_Envios_Weather (Weather Service)
 
 #### `Woo_Envios_Weather::get_weather_multiplier(float $lat, float $lng): float`
-**Description:** Gets weather-based price multiplier for dynamic pricing.  
-**Parameters:**
-- `float $lat`: Latitude
-- `float $lng`: Longitude
-- **Returns:** `float` Multiplier (1.0 = no rain, 1.2 = light rain, 1.5 = heavy rain)
+**Access:** public  
+**Parameters:** 
+- `$lat` (float): Latitude
+- `$lng` (float): Longitude  
+**Returns:** float - Weather multiplier (1.0-1.5)  
+**Description:** Gets weather-based price multiplier using OpenWeather API.
 
 #### `Woo_Envios_Weather::get_weather_description(array $weather_data): string`
-**Description:** Gets human-readable weather description.  
-**Parameters:**
-- `array $weather_data`: Weather data from OpenWeather API
-- **Returns:** `string` Weather description
+**Access:** public  
+**Parameters:** 
+- `$weather_data` (array): Weather data from OpenWeather API  
+**Returns:** string - Human-readable weather description  
+**Description:** Extracts weather description from API response.
 
 #### `Woo_Envios_Weather::clear_cache(): void`
-**Description:** Clears weather cache transients.  
+**Access:** public  
 **Parameters:** None  
-**Returns:** `void`
+**Returns:** void  
+**Description:** Clears weather API cache.
 
 ### Woo_Envios_Logger (Logging System)
 
-#### `Woo_Envios_Logger::shipping_calculated(float $distance, float $base_price, float $final_price, array $multipliers, string $address = '', array $store_coords = [], array $customer_coords = []): void`
-**Description:** Logs shipping calculation details.  
-**Parameters:**
-- `float $distance`: Distance in km
-- `float $base_price`: Base shipping price
-- `float $final_price`: Final price after multipliers
-- `array $multipliers`: Applied multiplier reasons
-- `string $address`: Customer address (optional)
-- `array $store_coords`: Store coordinates (optional)
-- `array $customer_coords`: Customer coordinates (optional)
-- **Returns:** `void`
+#### `Woo_Envios_Logger::shipping_calculated(float $distance, float $base_price, float $final_price, array $multipliers, string $address = '', array $store_coords = array(), array $customer_coords = array()): void`
+**Access:** public static  
+**Parameters:** 
+- `$distance` (float): Distance in km
+- `$base_price` (float): Base price
+- `$final_price` (float): Final price
+- `$multipliers` (array): Applied multipliers
+- `$address` (string): Customer address
+- `$store_coords` (array): Store coordinates
+- `$customer_coords` (array): Customer coordinates  
+**Returns:** void  
+**Description:** Logs shipping calculation details.
 
 #### `Woo_Envios_Logger::error(string $message): void`
-**Description:** Logs error message.  
-**Parameters:**
-- `string $message`: Error message
-- **Returns:** `void`
+**Access:** public static  
+**Parameters:** 
+- `$message` (string): Error message  
+**Returns:** void  
+**Description:** Logs error message.
 
 #### `Woo_Envios_Logger::info(string $message): void`
-**Description:** Logs info message.  
-**Parameters:**
-- `string $message`: Info message
-- **Returns:** `void`
+**Access:** public static  
+**Parameters:** 
+- `$message` (string): Info message  
+**Returns:** void  
+**Description:** Logs info message.
 
 #### `Woo_Envios_Logger::warning(string $message): void`
-**Description:** Logs warning message.  
-**Parameters:**
-- `string $message`: Warning message
-- **Returns:** `void`
+**Access:** public static  
+**Parameters:** 
+- `$message` (string): Warning message  
+**Returns:** void  
+**Description:** Logs warning message.
 
 #### `Woo_Envios_Logger::api_failure(string $api_name, string $error): void`
-**Description:** Logs API failure.  
-**Parameters:**
-- `string $api_name`: API name (e.g., "Google Maps")
-- `string $error`: Error message
-- **Returns:** `void`
+**Access:** public static  
+**Parameters:** 
+- `$api_name` (string): API name
+- `$error` (string): Error message  
+**Returns:** void  
+**Description:** Logs API failure.
 
 #### `Woo_Envios_Logger::circuit_breaker_opened(int $failures): void`
-**Description:** Logs circuit breaker activation and notifies admin.  
-**Parameters:**
-- `int $failures`: Number of consecutive failures
-- **Returns:** `void`
+**Access:** public static  
+**Parameters:** 
+- `$failures` (int): Number of failures  
+**Returns:** void  
+**Description:** Logs circuit breaker activation and notifies admin.
 
 #### `Woo_Envios_Logger::distance_out_of_range(float $distance, array $destination_data): void`
-**Description:** Logs when customer distance is outside delivery range.  
-**Parameters:**
-- `float $distance`: Calculated distance in km
-- `array $destination_data`: Destination address data
-- **Returns:** `void`
+**Access:** public static  
+**Parameters:** 
+- `$distance` (float): Calculated distance
+- `$destination_data` (array): Destination address data  
+**Returns:** void  
+**Description:** Logs when customer distance is outside delivery range.
 
 #### `Woo_Envios_Logger::cleanup_old_logs(): void`
-**Description:** Cleans up log files older than 7 days.  
+**Access:** public static  
 **Parameters:** None  
-**Returns:** `void`
+**Returns:** void  
+**Description:** Cleans up log files older than 7 days.
 
 ### Woo_Envios_Admin (Admin Interface)
 
 #### `Woo_Envios_Admin::get_store_coordinates(): array`
-**Description:** Retrieves store coordinates from plugin settings.  
+**Access:** public static  
 **Parameters:** None  
-**Returns:** `array` with keys 'lat' and 'lng'
+**Returns:** array - Store coordinates with 'lat' and 'lng' keys  
+**Description:** Retrieves store coordinates from plugin settings.
 
 #### `Woo_Envios_Admin::match_tier_by_distance(float $distance): array|null`
-**Description:** Matches distance to configured shipping tier.  
-**Parameters:**
-- `float $distance`: Distance in kilometers
-- **Returns:** `array|null` Tier configuration or null if no match
+**Access:** public static  
+**Parameters:** 
+- `$distance` (float): Distance in km  
+**Returns:** array|null - Tier configuration or null if no match  
+**Description:** Matches distance to configured pricing tier.
 
-### Services\Geocoder (Geocoding Service)
+### Woo_Envios_Updater (Update System)
 
-#### `Woo_Envios\Services\Geocoder::geocode(string $address): array|false`
-**Description:** Geocodes address to coordinates using Google Maps API.  
-**Parameters:**
-- `string $address`: Full address string
-- **Returns:** `array|false` Coordinates array with 'lat' and 'lng' or false on failure
+#### `Woo_Envios_Updater::__construct(string $plugin_file, string $username, string $repo)`
+**Access:** public  
+**Parameters:** 
+- `$plugin_file` (string): Main plugin file path
+- `$username` (string): GitHub username
+- `$repo` (string): GitHub repository name  
+**Description:** Initializes the update checker.
 
-### Services\Woo_Envios_Correios (Correios/Shipping Service)
+## Internal API Routes & Services
 
-#### `Woo_Envios\Services\Woo_Envios_Correios::is_enabled(): bool`
-**Description:** Checks if Correios shipping is enabled.  
+### Geocoder Service (`\Woo_Envios\Services\Geocoder`)
+
+#### `Geocoder::geocode(string $address): array|null`
+**Access:** public static  
+**Parameters:** 
+- `$address` (string): Full address string  
+**Returns:** array|null - Coordinates array with 'lat' and 'lng' or null  
+**Description:** Geocodes address to coordinates using Google Maps API with caching.
+
+### Correios Service (`\Woo_Envios\Services\Woo_Envios_Correios`)
+
+#### `Woo_Envios_Correios::is_enabled(): bool`
+**Access:** public  
 **Parameters:** None  
-**Returns:** `bool` True if enabled
+**Returns:** bool - True if Correios/SuperFrete is enabled  
+**Description:** Checks if Correios integration is enabled.
 
-#### `Woo_Envios\Services\Woo_Envios_Correios::calculate(array $package): array|false`
-**Description:** Calculates Correios shipping rates.  
-**Parameters:**
-- `array $package`: WooCommerce package data
-- **Returns:** `array|false` Array of rate data or false on failure
+#### `Woo_Envios_Correios::calculate(array $package): array|null`
+**Access:** public  
+**Parameters:** 
+- `$package` (array): WooCommerce package data  
+**Returns:** array|null - Array of shipping rates or null  
+**Description:** Calculates Correios/SuperFrete shipping rates.
 
-## Internal API Routes & Endpoints
+### SuperFrete Shipping Method (`\Woo_Envios\Services\Woo_Envios_Superfrete_Shipping_Method`)
 
-### Google Maps API Integration Endpoints
+#### `Woo_Envios_Superfrete_Shipping_Method::calculate_shipping($package = array()): void`
+**Access:** public  
+**Parameters:** 
+- `$package` (array): WooCommerce package data  
+**Returns:** void  
+**Description:** Calculates SuperFrete shipping rates for destinations outside local radius.
 
-#### Geocoding API
-**URL:** `https://maps.googleapis.com/maps/api/geocode/json`  
-**Method:** GET  
-**Parameters:**
-- `address`: Address to geocode
-- `key`: Google Maps API key
-- `language`: Language code (default: pt_br)
+## Session Data Structure
 
-#### Distance Matrix API
-**URL:** `https://maps.googleapis.com/maps/api/distancematrix/json`  
-**Method:** GET  
-**Parameters:**
-- `origins`: Origin coordinates "lat,lng"
-- `destinations`: Destination coordinates "lat,lng"
-- `key`: Google Maps API key
-- `units`: Distance units (metric/imperial)
+### Coordinate Storage
+```php
+WC()->session->set('woo_envios_coords', array(
+    'lat'       => float,      // Latitude
+    'lng'       => float,      // Longitude
+    'signature' => string,     // MD5 hash of normalized address
+));
+```
 
-#### Places Autocomplete API
-**URL:** `https://maps.googleapis.com/maps/api/place/autocomplete/json`  
-**Method:** GET  
-**Parameters:**
-- `input`: User input for autocomplete
-- `key`: Google Maps API key
-- `types`: Address type filters
-- `components`: Country restrictions
-
-#### Place Details API
-**URL:** `https://maps.googleapis.com/maps/api/place/details/json`  
-**Method:** GET  
-**Parameters:**
-- `place_id`: Google Place ID
-- `key`: Google Maps API key
-- `fields`: Requested data fields
-
-### OpenWeather API Integration
-
-#### Current Weather API
-**URL:** `https://api.openweathermap.org/data/2.5/weather`  
-**Method:** GET  
-**Parameters:**
-- `lat`: Latitude
-- `lon`: Longitude
-- `appid`: OpenWeather API key
-- `units`: Units (metric/imperial)
-- `lang`: Language code
-
-### GitHub Update API
-
-#### Plugin Update JSON
-**URL:** `https://raw.githubusercontent.com/{username}/{repo}/main/plugin-update.json`  
-**Method:** GET  
-**Response Format:**
-```json
-{
-  "name": "Plugin Name",
-  "version": "1.2.8",
-  "download_url": "https://github.com/.../plugin.zip",
-  "requires": "6.2",
-  "requires_php": "7.4",
-  "tested": "6.5",
-  "sections": {
-    "description": "Plugin description",
-    "changelog": "Version changes"
-  }
-}
+### Session Signature Generation
+The signature is generated from normalized address components:
+```php
+$parts = array(
+    sanitize_text_field($destination['city'] ?? ''),
+    sanitize_text_field($destination['state'] ?? ''),
+    preg_replace('/\D/', '', $destination['postcode'] ?? ''),
+    sanitize_text_field($destination['country'] ?? ''),
+);
+$signature = md5(strtolower(implode('|', $parts)));
 ```
 
 ## Database Schema
 
-### Cache Tables
-
-#### `{prefix}woo_envios_geocode_cache`
-**Purpose:** Caches Google Maps geocoding results  
-**Schema:**
+### Geocode Cache Table
 ```sql
-CREATE TABLE IF NOT EXISTS {prefix}woo_envios_geocode_cache (
-  id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  cache_key varchar(64) NOT NULL,
-  result_data longtext NOT NULL,
-  created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  expires_at datetime NOT NULL,
-  PRIMARY KEY (id),
-  UNIQUE KEY cache_key (cache_key),
-  KEY expires_at (expires_at)
-)
+CREATE TABLE wp_woo_envios_geocode_cache (
+    id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+    cache_key varchar(64) NOT NULL,
+    result_data longtext NOT NULL,
+    created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    expires_at datetime NOT NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY cache_key (cache_key),
+    KEY expires_at (expires_at)
+);
 ```
 
-### WordPress Options (Settings)
+## Configuration Options
 
-#### Plugin Configuration Options
+### Plugin Settings (via WooCommerce → Woo Envios)
 - `woo_envios_google_maps_api_key`: Google Maps API key
 - `woo_envios_weather_api_key`: OpenWeather API key
-- `woo_envios_enable_logs`: Enable/disable logging
-- `woo_envios_dynamic_pricing_enabled`: Dynamic pricing toggle
-- `woo_envios_rain_light_multiplier`: Light rain multiplier (default: 1.2)
-- `woo_envios_rain_heavy_multiplier`: Heavy rain multiplier (default: 1.5)
-- `woo_envios_weekend_multiplier`: Weekend multiplier
-- `woo_envios_max_multiplier`: Maximum price multiplier (default: 2.0)
+- `woo_envios_dynamic_pricing_enabled`: Enable/disable dynamic pricing
 - `woo_envios_peak_hours`: Array of peak hour configurations
-- `triqhub_license_key`: TriqHub license key for updates
+- `woo_envios_weekend_multiplier`: Weekend price multiplier
+- `woo_envios_rain_light_multiplier`: Light rain multiplier
+- `woo_envios_rain_heavy_multiplier`: Heavy rain multiplier
+- `woo_envios_max_multiplier`: Maximum price multiplier
+- `woo_envios_enable_logs`: Enable/disable logging
+- `triqhub_license_key`: TriqHub license key
 
-#### Transients (Temporary Cache)
-- `woo_envios_weather_{hash}`: Weather data cache (1 hour)
-- `woo_envios_api_failures`: API failure count for circuit breaker
-- `woo_envios_last_failure_notification`: Last admin notification timestamp
-- `_transient_woo_envios_weather_*`: Weather API cache entries
+### Shipping Method Settings
+- `enabled`: Enable/disable shipping method
+- `title`: Display title for customers
+- Distance tiers configuration (via admin interface)
 
-## Session Data Structure
+## Error Handling
 
-### WooCommerce Session Variables
+### WP_Error Codes
+- `not_configured`: Google Maps API not configured
+- `circuit_open`: API circuit breaker is open
+- `api_failure`: General API failure
 
-#### `woo_envios_coords`
-**Type:** `array`  
-**Structure:**
+### Circuit Breaker Pattern
+The plugin implements a circuit breaker pattern for Google Maps API calls:
+1. Tracks consecutive failures in transient `woo_envios_api_failures`
+2. Opens circuit after 5 consecutive failures
+3. Circuit remains open for 1 hour
+4. Admin is notified via email when circuit opens
+5. System falls back to default coordinates when circuit is open
+
+## Constants
+
+### Plugin Constants
 ```php
-[
-  'lat' => float,      // Latitude
-  'lng' => float,      // Longitude
-  'signature' => string // Address signature for validation
-]
+define('WOO_ENVIOS_FILE', __FILE__);
+define('WOO_ENVIOS_PATH', plugin_dir_path(__FILE__));
+define('WOO_ENVIOS_URL', plugin_dir_url(__FILE__));
+define('WOO_ENVIOS_ASSETS', WOO_ENVIOS_URL . 'assets/');
+define('WOO_ENVIOS_DEFAULT_LAT', -18.911);
+define('WOO_ENVIOS_DEFAULT_LNG', -48.262);
 ```
 
-**Purpose:** Stores customer coordinates retrieved during checkout to avoid repeated geocoding.
+### Class Constants
+- `Woo_Envios_Weather::API_URL`: OpenWeather API endpoint
+- `Woo_Envios_Weather::CACHE_DURATION`: 3600 seconds (1 hour)
+- `Woo_Envios_Google_Maps::API_KEY_OPTION`: 'woo_envios_google_maps_api_key'
+- `Woo_Envios_Google_Maps::MAX_CONSECUTIVE_FAILURES`: 5
+- `Woo_Envios_Google_Maps::MAX_RETRIES`: 3
+- `Woo_Envios_Google_Maps::REQUEST_TIMEOUT`: 10
 
-## Error Handling & Status Codes
+## Integration Points
 
-### WordPress Error Codes
-
-#### Google Maps API Errors
-- `not_configured`: Google Maps API key not configured
-- `api_failure`: Google Maps API request failed
-- `invalid_response`: Invalid API response format
-- `circuit_open`: Circuit breaker active (too many failures)
-
-#### Shipping Calculation Errors
-- `no_store_coords`: Store coordinates not configured
-- `no_customer_coords`: Customer coordinates not available
-- `distance_out_of_range`: Customer outside delivery radius
-- `geocode_failed`: Address geocoding failed
-
-### HTTP Status Codes (External APIs)
-
-#### Google Maps API
+### WooCommerce Integration
+- Shipping method registration via `woocommerce_shipping_methods` filter
+- Shipping calculation via `WC_Shipping_Method` extension
+- Session-based coordinate storage
+- Checkout field integration for address
