@@ -792,368 +792,155 @@ final class Woo_Envios_Admin {
 			return;
 		}
 
+		$connector = new \TriqHub_Connector( 'TRQ-SHIPPING-SESSIONS', 'triqhub-shipping-radius' );
+
+		$connector->render_admin_header(
+			__( 'TriqHub: Shipping & Radius', 'woo-envios' ),
+			__( 'Configure suas regras de entrega local por raio e integre com SuperFrete.', 'woo-envios' ),
+			array(
+				array(
+					'label' => 'Limpar Cache de CEPs',
+					'link' => '#',
+					'icon' => 'dashicons-trash',
+					'primary' => false,
+					'id' => 'woo-envios-clear-cache-btn'
+				)
+			)
+		);
+
 		$store_label = get_option( self::OPTION_STORE_LABEL, __( 'Base Uberlândia', 'woo-envios' ) );
 		$coords      = self::get_store_coordinates();
 		$tiers       = self::get_tiers();
 		?>
-		<div class="wrap woo-envios-wrap">
-			<h1><?php esc_html_e( 'Woo Envios — Configuração de Raio', 'woo-envios' ); ?></h1>
+		<form method="post" action="options.php">
+			<?php settings_fields( 'woo_envios_settings' ); ?>
 
-			<form method="post" action="options.php">
-				<?php settings_fields( 'woo_envios_settings' ); ?>
-
-				<section class="woo-envios-card">
-					<h2><?php esc_html_e( 'Origem das Entregas', 'woo-envios' ); ?></h2>
-					<p><?php esc_html_e( 'Defina o ponto central das entregas locais. Use o mapa gratuito (OpenStreetMap) para posicionar a base na cidade de Uberlândia.', 'woo-envios' ); ?></p>
-
-					<?php if ( (string) $coords['lat'] === (string) WOO_ENVIOS_DEFAULT_LAT && (string) $coords['lng'] === (string) WOO_ENVIOS_DEFAULT_LNG ) : ?>
-						<div style="padding: 10px; background: #f8d7da; border-left: 4px solid #dc3545; margin-bottom: 15px; color: #721c24;">
-							<strong><?php esc_html_e( '⚠️ Atenção: Coordenadas Padrão Detectadas', 'woo-envios' ); ?></strong><br>
-							<?php esc_html_e( 'Você está usando as coordenadas padrão do plugin. Isso pode causar cálculos de distância incorretos. Por favor, arraste o marcador no mapa abaixo para a localização real da sua loja.', 'woo-envios' ); ?>
+			<div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 30px;">
+				<!-- Left Column -->
+				<div>
+					<!-- Map & Origin Section -->
+					<div class="triqhub-card" style="margin-bottom: 30px; background: white; border-radius: 12px; padding: 25px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+						<h3 style="margin-top: 0; font-size: 18px; font-weight: 600;"><?php esc_html_e( 'Ponto de Origem', 'woo-envios' ); ?></h3>
+						<p class="description" style="margin-bottom: 15px;"><?php esc_html_e( 'Defina o ponto central das entregas locais.', 'woo-envios' ); ?></p>
+						
+						<div class="woo-envios-search" style="margin-bottom: 15px;">
+							<div style="display: flex; gap: 10px;">
+								<input type="text" id="woo-envios-search-input" placeholder="<?php esc_attr_e( 'Rua Iguaçu, 1400 - Uberlândia', 'woo-envios' ); ?>" class="regular-text" style="flex-grow: 1; border-radius: 8px;">
+								<button type="button" class="button" id="woo-envios-search-btn"><?php esc_html_e( 'Buscar', 'woo-envios' ); ?></button>
+							</div>
+							<ul id="woo-envios-search-results" style="margin-top: 5px; background: white; border: 1px solid #ddd; display: none;"></ul>
 						</div>
-					<?php endif; ?>
 
-					<label class="woo-envios-field">
-						<span><?php esc_html_e( 'Nome da base', 'woo-envios' ); ?></span>
-						<input
-							type="text"
-							name="<?php echo esc_attr( self::OPTION_STORE_LABEL ); ?>"
-							value="<?php echo esc_attr( (string) $store_label ); ?>"
-							class="regular-text"
-						/>
-					</label>
+						<div id="woo-envios-admin-map" data-lat="<?php echo esc_attr( (string) $coords['lat'] ); ?>" data-lng="<?php echo esc_attr( (string) $coords['lng'] ); ?>" style="height: 400px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #cbd5e1;"></div>
 
-					<div class="woo-envios-search">
-						<span><?php esc_html_e( 'Pesquisar endereço da base', 'woo-envios' ); ?></span>
-						<div class="woo-envios-search-controls">
-							<input
-								type="text"
-								id="woo-envios-search-input"
-								placeholder="<?php esc_attr_e( 'Rua Iguaçu, 1400 - Uberlândia', 'woo-envios' ); ?>"
-							/>
-							<button type="button" class="button" id="woo-envios-search-btn">
-								<?php esc_html_e( 'Buscar', 'woo-envios' ); ?>
-							</button>
+						<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+							<div>
+								<label style="display: block; font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: 5px;">Latitude</label>
+								<input type="text" id="woo_envios_store_lat" name="<?php echo esc_attr( self::OPTION_STORE_LAT ); ?>" value="<?php echo esc_attr( (string) $coords['lat'] ); ?>" readonly style="width: 100%; border-radius: 6px; background: #f1f5f9; border: 1px solid #e2e8f0;">
+							</div>
+							<div>
+								<label style="display: block; font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: 5px;">Longitude</label>
+								<input type="text" id="woo_envios_store_lng" name="<?php echo esc_attr( self::OPTION_STORE_LNG ); ?>" value="<?php echo esc_attr( (string) $coords['lng'] ); ?>" readonly style="width: 100%; border-radius: 6px; background: #f1f5f9; border: 1px solid #e2e8f0;">
+							</div>
 						</div>
-						<p class="description"><?php esc_html_e( 'Busca gratuita usando o Nominatim/OpenStreetMap. Clique em um resultado para fixar o marcador.', 'woo-envios' ); ?></p>
-						<ul id="woo-envios-search-results"></ul>
 					</div>
 
-					<div id="woo-envios-admin-map" data-lat="<?php echo esc_attr( (string) $coords['lat'] ); ?>" data-lng="<?php echo esc_attr( (string) $coords['lng'] ); ?>"></div>
-					<p class="description"><?php esc_html_e( 'Clique ou arraste o marcador para ajustar a localização.', 'woo-envios' ); ?></p>
+					<!-- Tiers Section -->
+					<div class="triqhub-card" style="margin-bottom: 30px; background: white; border-radius: 12px; padding: 25px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+						<h3 style="margin-top: 0; font-size: 18px; font-weight: 600;"><?php esc_html_e( 'Faixas de Entrega Local', 'woo-envios' ); ?></h3>
+						<p class="description" style="margin-bottom: 15px;"><?php esc_html_e( 'Defina os preços baseados na distância em linha reta.', 'woo-envios' ); ?></p>
 
-					<div class="woo-envios-grid">
-						<label class="woo-envios-field">
-							<span><?php esc_html_e( 'Latitude', 'woo-envios' ); ?></span>
-							<input type="text" id="woo_envios_store_lat" name="<?php echo esc_attr( self::OPTION_STORE_LAT ); ?>" value="<?php echo esc_attr( (string) $coords['lat'] ); ?>" readonly />
-						</label>
-
-						<label class="woo-envios-field">
-							<span><?php esc_html_e( 'Longitude', 'woo-envios' ); ?></span>
-							<input type="text" id="woo_envios_store_lng" name="<?php echo esc_attr( self::OPTION_STORE_LNG ); ?>" value="<?php echo esc_attr( (string) $coords['lng'] ); ?>" readonly />
-						</label>
-					</div>
-				</section>
-
-				<section class="woo-envios-card">
-					<h2><?php esc_html_e( 'Configuração Google Maps API', 'woo-envios' ); ?></h2>
-					<p><?php esc_html_e( 'Configure a API do Google Maps para geocodificação precisa de endereços brasileiros. O sistema usa cache inteligente para economizar requisições.', 'woo-envios' ); ?></p>
-
-					<label class="woo-envios-field">
-						<span><?php esc_html_e( 'Google Maps API Key', 'woo-envios' ); ?></span>
-						<input
-							type="text"
-							name="woo_envios_google_maps_api_key"
-							value="<?php echo esc_attr( get_option( 'woo_envios_google_maps_api_key', '' ) ); ?>"
-							class="regular-text"
-							placeholder="AIzaSy..."
-						/>
-						<p class="description">
-							<?php
-							printf(
-								/* translators: %s: Link to Google Cloud Console */
-								esc_html__( 'Obtenha sua chave gratuita no %s. Você tem $200 USD/mês grátis (~40.000 requisições).', 'woo-envios' ),
-								'<a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">Google Cloud Console</a>'
-							);
-							?>
-						</p>
-					</label>
-
-					<?php
-					$api_key_configured = ! empty( get_option( 'woo_envios_google_maps_api_key', '' ) );
-					if ( $api_key_configured ) :
-						?>
-						<div style="padding: 10px; background: #d4edda; border-left: 4px solid #28a745; margin-top: 10px;">
-							<strong>✓ Google Maps Configurado</strong><br>
-							<small>O sistema está usando Google Maps API para geocodificação. O mapa acima usa OpenStreetMap apenas para visualização (gratuito).</small>
-						</div>
-					<?php else : ?>
-						<div style="padding: 10px; background: #fff3cd; border-left: 4px solid #ffc107; margin-top: 10px;">
-							<strong>⚠ Google Maps Não Configurado</strong><br>
-							<small>Adicione uma API Key acima para usar geocodificação precisa do Google Maps. Coordenadas padrão serão usadas enquanto não configurado.</small>
-						</div>
-					<?php endif; ?>
-				</section>
-
-				<section class="woo-envios-card">
-					<h2><?php esc_html_e( '⚡ Precificação Dinâmica', 'woo-envios' ); ?></h2>
-					<p><?php esc_html_e( 'Ajuste automaticamente os preços baseado em horários de pico, fim de semana e condições climáticas - similar ao Uber/99.', 'woo-envios' ); ?></p>
-
-					<label class="woo-envios-field">
-						<input type="checkbox" name="woo_envios_dynamic_pricing_enabled" value="1" <?php checked( get_option( 'woo_envios_dynamic_pricing_enabled', false ) ); ?> />
-						<span><?php esc_html_e( 'Habilitar precificação dinâmica', 'woo-envios' ); ?></span>
-					</label>
-
-					<div id="dynamic-pricing-settings" style="<?php echo get_option( 'woo_envios_dynamic_pricing_enabled' ) ? '' : 'display:none;'; ?>">
-						<h3><?php esc_html_e( '🕐 Horários de Pico', 'woo-envios' ); ?></h3>
-						<p class="description"><?php esc_html_e( 'Configure os períodos de maior demanda e seus multiplicadores.', 'woo-envios' ); ?></p>
-
-						<table class="widefat">
+						<table class="widefat woo-envios-tiers" style="border: none;">
 							<thead>
-								<tr>
-									<th><?php esc_html_e( 'Período', 'woo-envios' ); ?></th>
-									<th><?php esc_html_e( 'Início', 'woo-envios' ); ?></th>
-									<th><?php esc_html_e( 'Fim', 'woo-envios' ); ?></th>
-					<th><?php esc_html_e( 'Multiplicador', 'woo-envios' ); ?></th>
+								<tr style="background: #f8fafc;">
+									<th style="border-radius: 8px 0 0 0;"><?php esc_html_e( 'Nome/Label', 'woo-envios' ); ?></th>
+									<th><?php esc_html_e( 'Raio Máx (km)', 'woo-envios' ); ?></th>
+									<th><?php esc_html_e( 'Preço (R$)', 'woo-envios' ); ?></th>
+									<th style="border-radius: 0 8px 0 0;"></th>
 								</tr>
 							</thead>
-							<tbody>
-								<?php
-								$peak_hours = get_option( 'woo_envios_peak_hours', array(
-									array( 'name' => 'Manhã', 'start' => '07:00', 'end' => '09:00', 'multiplier' => 1.15 ),
-									array( 'name' => 'Almoço', 'start' => '11:30', 'end' => '13:30', 'multiplier' => 1.20 ),
-									array( 'name' => 'Noite', 'start' => '18:00', 'end' => '20:00', 'multiplier' => 1.25 ),
-								) );
-								foreach ( $peak_hours as $index => $period ) :
-								?>
+							<tbody id="woo-envios-tier-rows">
+								<?php foreach ( $tiers as $index => $tier ) : ?>
 									<tr>
-										<td><input type="text" name="woo_envios_peak_hours[<?php echo esc_attr( $index ); ?>][name]" value="<?php echo esc_attr( $period['name'] ); ?>" /></td>
-										<td><input type="time" name="woo_envios_peak_hours[<?php echo esc_attr( $index ); ?>][start]" value="<?php echo esc_attr( $period['start'] ); ?>" /></td>
-										<td><input type="time" name="woo_envios_peak_hours[<?php echo esc_attr( $index ); ?>][end]" value="<?php echo esc_attr( $period['end'] ); ?>" /></td>
-										<td><input type="number" step="0.1" min="1" max="3" name="woo_envios_peak_hours[<?php echo esc_attr( $index ); ?>][multiplier]" value="<?php echo esc_attr( $period['multiplier'] ); ?>" /></td>
+										<td><input type="text" name="<?php echo esc_attr( self::OPTION_TIERS ); ?>[<?php echo esc_attr( (string) $index ); ?>][label]" value="<?php echo esc_attr( $tier['label'] ); ?>" style="width: 100%; border-radius: 6px;"></td>
+										<td><input type="number" step="0.1" name="<?php echo esc_attr( self::OPTION_TIERS ); ?>[<?php echo esc_attr( (string) $index ); ?>][distance]" value="<?php echo esc_attr( (string) $tier['distance'] ); ?>" style="width: 100%; border-radius: 6px;"></td>
+										<td><input type="number" step="0.01" name="<?php echo esc_attr( self::OPTION_TIERS ); ?>[<?php echo esc_attr( (string) $index ); ?>][price]" value="<?php echo esc_attr( (string) $tier['price'] ); ?>" style="width: 100%; border-radius: 6px;"></td>
+										<td><button type="button" class="button button-link-delete woo-envios-remove-tier">×</button></td>
 									</tr>
 								<?php endforeach; ?>
 							</tbody>
 						</table>
-
-						<div class="woo-envios-grid" style="margin-top: 20px;">
-							<label class="woo-envios-field">
-								<span><?php esc_html_e( '📅 Multiplicador Fim de Semana', 'woo-envios' ); ?></span>
-								<input type="number" step="0.1" min="1" max="2" name="woo_envios_weekend_multiplier" value="<?php echo esc_attr( get_option( 'woo_envios_weekend_multiplier', 1.10 ) ); ?>" />
-								<p class="description"><?php esc_html_e( 'Aplicado aos sábados e domingos', 'woo-envios' ); ?></p>
-							</label>
-
-							<label class="woo-envios-field">
-								<span><?php esc_html_e( '🔥 Multiplicador Máximo', 'woo-envios' ); ?></span>
-								<input type="number" step="0.1" min="1" max="3" name="woo_envios_max_multiplier" value="<?php echo esc_attr( get_option( 'woo_envios_max_multiplier', 2.0 ) ); ?>" />
-								<p class="description"><?php esc_html_e( 'Limite de segurança para não cobrar demais', 'woo-envios' ); ?></p>
-							</label>
-						</div>
-
-						<h3><?php esc_html_e( '🌧️ Condições Climáticas (Opcional)', 'woo-envios' ); ?></h3>
-						<label class="woo-envios-field">
-							<span><?php esc_html_e( 'OpenWeather API Key', 'woo-envios' ); ?></span>
-							<input type="text" name="woo_envios_weather_api_key" value="<?php echo esc_attr( get_option( 'woo_envios_weather_api_key', '' ) ); ?>" class="regular-text" placeholder="<?php esc_attr_e( 'Opcional - deixe vazio para desabilitar', 'woo-envios' ); ?>" />
-							<p class="description">
-								<?php
-								printf(
-									esc_html__( 'Obtenha grátis em %s (1.000 chamadas/dia)', 'woo-envios' ),
-									'<a href="https://openweathermap.org/api" target="_blank">OpenWeather</a>'
-								);
-								?>
-							</p>
-						</label>
-
-						<div class="woo-envios-grid">
-							<label class="woo-envios-field">
-								<span><?php esc_html_e( 'Chuva Leve', 'woo-envios' ); ?></span>
-								<input type="number" step="0.1" min="1" max="2" name="woo_envios_rain_light_multiplier" value="<?php echo esc_attr( get_option( 'woo_envios_rain_light_multiplier', 1.15 ) ); ?>" />
-							</label>
-
-							<label class="woo-envios-field">
-								<span><?php esc_html_e( 'Chuva Forte', 'woo-envios' ); ?></span>
-								<input type="number" step="0.1" min="1" max="2.5" name="woo_envios_rain_heavy_multiplier" value="<?php echo esc_attr( get_option( 'woo_envios_rain_heavy_multiplier', 1.30 ) ); ?>" />
-							</label>
+						<div style="margin-top: 15px;">
+							<button type="button" class="button" id="woo-envios-add-tier"><?php esc_html_e( '+ Adicionar Faixa', 'woo-envios' ); ?></button>
 						</div>
 					</div>
-				</section>
+				</div>
 
-				<section class="woo-envios-card">
-					<h2><?php esc_html_e( '🔧 Configurações Avançadas', 'woo-envios' ); ?></h2>
-					
-					<label class="woo-envios-field">
-						<input type="checkbox" name="woo_envios_enable_logs" value="1" <?php checked( get_option( 'woo_envios_enable_logs', false ) ); ?> />
-						<span><?php esc_html_e( 'Habilitar logs de debug', 'woo-envios' ); ?></span>
-						<p class="description"><?php esc_html_e( 'Salva logs detalhados de cálculos de frete e erros em wp-content/uploads/woo-envios-logs/', 'woo-envios' ); ?></p>
-					</label>
-				</section>
-
-				<section class="woo-envios-card" style="border-left: 4px solid #007cba;">
-					<h2><?php esc_html_e( '🛠️ Ferramentas de Debug', 'woo-envios' ); ?></h2>
-					<p><?php esc_html_e( 'Use estas ferramentas para diagnosticar problemas de cálculo de distância.', 'woo-envios' ); ?></p>
-
-					<div class="woo-envios-debug-tool">
-						<h3><?php esc_html_e( 'Testar Geocodificação e Distância', 'woo-envios' ); ?></h3>
-						<div class="woo-envios-search-controls">
-							<input type="text" id="woo-envios-debug-address" class="regular-text" placeholder="<?php esc_attr_e( 'Digite um endereço completo para testar...', 'woo-envios' ); ?>" />
-							<button type="button" class="button button-primary" id="woo-envios-debug-btn">
-								<?php esc_html_e( 'Testar Cálculo', 'woo-envios' ); ?>
-							</button>
-						</div>
-						<div id="woo-envios-debug-results" style="margin-top: 15px; display: none; padding: 15px; background: #f0f0f1; border-radius: 4px;"></div>
-					</div>
-
-					<hr style="margin: 20px 0;">
-
-					<div class="woo-envios-debug-tool">
-						<h3><?php esc_html_e( 'Limpar Cache de Endereços', 'woo-envios' ); ?></h3>
-						<p><?php esc_html_e( 'Se você mudou o endereço da loja recentemente ou está tendo problemas com endereços antigos, limpe o cache.', 'woo-envios' ); ?></p>
-						<button type="button" class="button" id="woo-envios-clear-cache-btn">
-							<?php esc_html_e( 'Limpar Cache de Geocodificação', 'woo-envios' ); ?>
-						</button>
-						<span id="woo-envios-cache-msg" style="margin-left: 10px;"></span>
-					</div>
-				</section>
-
-				<section class="woo-envios-card" style="border-left: 4px solid #00b894;">
-					<h2><?php esc_html_e( '🚚 SuperFrete - Cotação de Frete', 'woo-envios' ); ?></h2>
-					<p><?php esc_html_e( 'Configure o envio via PAC/SEDEX para clientes fora do raio de entrega local. Usa a API SuperFrete para cotações em tempo real.', 'woo-envios' ); ?></p>
-
-					<label class="woo-envios-field">
-						<input type="checkbox" name="woo_envios_superfrete_enabled" value="1" <?php checked( get_option( 'woo_envios_superfrete_enabled', true ) ); ?> />
-						<span><?php esc_html_e( 'Habilitar cotação via SuperFrete', 'woo-envios' ); ?></span>
-					</label>
-
-					<div id="superfrete-settings" style="<?php echo get_option( 'woo_envios_superfrete_enabled', true ) ? '' : 'display:none;'; ?>">
+				<!-- Right Column: Settings -->
+				<div>
+					<!-- Integrations Section -->
+					<div class="triqhub-card" style="margin-bottom: 25px; background: white; border-radius: 12px; padding: 25px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+						<h3 style="margin-top: 0; font-size: 16px; font-weight: 600;"><?php esc_html_e( 'Configurações de API', 'woo-envios' ); ?></h3>
 						
-						<h3 style="margin-top: 20px;"><?php esc_html_e( '🔑 Credenciais da API', 'woo-envios' ); ?></h3>
-						
-						<div class="woo-envios-grid">
-							<label class="woo-envios-field">
-								<span><?php esc_html_e( 'Token SuperFrete', 'woo-envios' ); ?></span>
-								<input type="text" name="woo_envios_superfrete_token" value="<?php echo esc_attr( get_option( 'woo_envios_superfrete_token', '' ) ); ?>" placeholder="eyJhbGciOiJIUzI1NiIs..." class="regular-text" style="font-family: monospace; font-size: 11px;" />
-								<p class="description">
-									<?php
-									printf(
-										esc_html__( 'Obtenha grátis em %s → Integrações → Developers', 'woo-envios' ),
-										'<a href="https://web.superfrete.com/#/integrations" target="_blank">web.superfrete.com</a>'
-									);
-									?>
-								</p>
-							</label>
-
-							<label class="woo-envios-field">
-								<span><?php esc_html_e( 'CEP de Origem', 'woo-envios' ); ?></span>
-								<input type="text" name="woo_envios_superfrete_origin_cep" value="<?php echo esc_attr( get_option( 'woo_envios_superfrete_origin_cep', '38405320' ) ); ?>" placeholder="38405-320" class="regular-text" />
-								<p class="description"><?php esc_html_e( 'CEP cadastrado na sua conta SuperFrete.', 'woo-envios' ); ?></p>
-							</label>
+						<div style="margin-bottom: 20px;">
+							<label style="display: block; font-weight: 500; margin-bottom: 8px;">Google Maps API Key</label>
+							<input type="password" name="woo_envios_google_maps_api_key" value="<?php echo esc_attr( get_option( 'woo_envios_google_maps_api_key' ) ); ?>" class="regular-text" style="width: 100%; border-radius: 8px; border: 1px solid #cbd5e1;">
+							<p class="description" style="font-size: 11px; margin-top: 5px;"><?php esc_html_e( 'Necessário para Geocodificação precisa.', 'woo-envios' ); ?></p>
 						</div>
 
-						<div class="woo-envios-grid" style="margin-top: 15px;">
-							<label class="woo-envios-field">
-								<span><?php esc_html_e( 'Margem de Lucro (%)', 'woo-envios' ); ?></span>
-								<input type="number" step="0.1" min="0" max="100" name="woo_envios_superfrete_profit_margin" value="<?php echo esc_attr( get_option( 'woo_envios_superfrete_profit_margin', 0 ) ); ?>" />
-								<p class="description"><?php esc_html_e( 'Adiciona X% sobre o valor do frete (0 = sem margem).', 'woo-envios' ); ?></p>
-							</label>
-
-							<label class="woo-envios-field">
-								<input type="checkbox" name="woo_envios_superfrete_sandbox" value="1" <?php checked( get_option( 'woo_envios_superfrete_sandbox', false ) ); ?> />
-								<span><?php esc_html_e( 'Modo Sandbox (testes)', 'woo-envios' ); ?></span>
+						<div style="border-top: 1px solid #f1f5f9; padding-top: 15px; margin-top: 15px;">
+							<label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer;">
+								<input type="checkbox" name="woo_envios_superfrete_enabled" value="1" <?php checked( get_option( 'woo_envios_superfrete_enabled', true ), 1 ); ?> style="width: 18px; height: 18px; margin-top: 2px;">
+								<div>
+									<strong style="display: block; color: #1e293b;">Habilitar SuperFrete</strong>
+									<span style="display: block; font-size: 12px; color: #64748b;">Ativa cotações automáticas de PAC/SEDEX quando fora do raio.</span>
+								</div>
 							</label>
 						</div>
-
-						<h3><?php esc_html_e( '📦 Serviços Ativos', 'woo-envios' ); ?></h3>
-						<p class="description"><?php esc_html_e( 'Selecione os serviços que deseja oferecer:', 'woo-envios' ); ?></p>
-						<?php
-						$available_services = array(
-							'1'  => array( 'name' => 'PAC', 'desc' => 'Econômico' ),
-							'2'  => array( 'name' => 'SEDEX', 'desc' => 'Expresso' ),
-							'17' => array( 'name' => 'Mini Envios', 'desc' => 'Até 300g' ),
-						);
-						$active_services = get_option( 'woo_envios_superfrete_services', array( '1', '2' ) );
-						if ( ! is_array( $active_services ) ) {
-							$active_services = array( '1', '2' );
-						}
-						?>
-												<input type="hidden" name="woo_envios_superfrete_services_submitted" value="1" />
-						<div class="woo-envios-services-grid">
-							<?php foreach ( $available_services as $code => $service ) : ?>
-								<label>
-									<input type="checkbox" name="woo_envios_superfrete_services[]" value="<?php echo esc_attr( $code ); ?>" <?php checked( in_array( $code, $active_services, true ) ); ?> />
-									<span><?php echo esc_html( $service['name'] ); ?></span>
-								</label>
-							<?php endforeach; ?>
-						</div>
-
-						<?php
-						// Status message
-						$token = get_option( 'woo_envios_superfrete_token', '' );
-						if ( ! empty( $token ) ) :
-						?>
-							<div class="woo-envios-alert woo-envios-alert-success">
-								<strong>✓ <?php esc_html_e( 'SuperFrete Configurado', 'woo-envios' ); ?></strong>
-								<small><?php esc_html_e( 'Cotações em tempo real ativas. Clientes fora do raio local receberão opções PAC/SEDEX.', 'woo-envios' ); ?></small>
-							</div>
-						<?php else : ?>
-							<div class="woo-envios-alert woo-envios-alert-danger">
-								<strong>⚠️ <?php esc_html_e( 'Token Não Configurado', 'woo-envios' ); ?></strong>
-								<small><?php esc_html_e( 'Sem token, o frete para clientes fora do raio local não será calculado.', 'woo-envios' ); ?></small>
-							</div>
-						<?php endif; ?>
 					</div>
-				</section>
 
-				<section class="woo-envios-card">
-					<h2><?php esc_html_e( 'Faixas de Raio e Preço', 'woo-envios' ); ?></h2>
-					<p><?php esc_html_e( 'Configure faixas de distância (em km) e seus valores. O WooCommerce aplicará automaticamente a faixa mais curta que contemple o cliente.', 'woo-envios' ); ?></p>
+					<!-- SuperFrete Config (Conditional) -->
+					<div id="superfrete-settings" style="margin-bottom: 25px; background: #f8fafc; border-radius: 12px; padding: 25px; border: 1px solid #e2e8f0; <?php echo get_option('woo_envios_superfrete_enabled', true) ? '' : 'display:none;'; ?>">
+						<h3 style="margin-top: 0; font-size: 15px; font-weight: 600;">Credenciais SuperFrete</h3>
+						<div style="margin-bottom: 15px;">
+							<label style="display: block; font-size: 12px; margin-bottom: 4px;">Token da API</label>
+							<input type="password" name="woo_envios_superfrete_token" value="<?php echo esc_attr( get_option( 'woo_envios_superfrete_token' ) ); ?>" style="width: 100%; border-radius: 6px; border: 1px solid #cbd5e1;">
+						</div>
+						<div style="margin-bottom: 15px;">
+							<label style="display: block; font-size: 12px; margin-bottom: 4px;">CEP de Origem</label>
+							<input type="text" name="woo_envios_superfrete_origin_cep" value="<?php echo esc_attr( get_option( 'woo_envios_superfrete_origin_cep', '38405320' ) ); ?>" style="width: 100%; border-radius: 6px; border: 1px solid #cbd5e1;">
+						</div>
+						<div style="margin-bottom: 15px;">
+							<label style="display: block; font-size: 12px; margin-bottom: 4px;">Margem de Lucro (%)</label>
+							<input type="number" step="0.1" name="woo_envios_superfrete_profit_margin" value="<?php echo esc_attr( get_option( 'woo_envios_superfrete_profit_margin', 0 ) ); ?>" style="width: 100%; border-radius: 6px; border: 1px solid #cbd5e1;">
+						</div>
+					</div>
 
-					<table class="widefat woo-envios-tiers">
-						<thead>
-							<tr>
-								<th><?php esc_html_e( 'Nome', 'woo-envios' ); ?></th>
-								<th><?php esc_html_e( 'Distância máxima (km)', 'woo-envios' ); ?></th>
-								<th><?php esc_html_e( 'Preço (R$)', 'woo-envios' ); ?></th>
-								<th></th>
-							</tr>
-						</thead>
-						<tbody id="woo-envios-tier-rows">
-							<?php foreach ( $tiers as $index => $tier ) : ?>
-								<tr>
-									<td>
-										<input type="text" name="<?php echo esc_attr( self::OPTION_TIERS ); ?>[<?php echo esc_attr( (string) $index ); ?>][label]" value="<?php echo esc_attr( $tier['label'] ); ?>" />
-									</td>
-									<td>
-										<input type="number" min="0" step="0.1" name="<?php echo esc_attr( self::OPTION_TIERS ); ?>[<?php echo esc_attr( (string) $index ); ?>][distance]" value="<?php echo esc_attr( (string) $tier['distance'] ); ?>" />
-									</td>
-									<td>
-										<input type="number" min="0" step="0.01" name="<?php echo esc_attr( self::OPTION_TIERS ); ?>[<?php echo esc_attr( (string) $index ); ?>][price]" value="<?php echo esc_attr( (string) $tier['price'] ); ?>" />
-									</td>
-									<td>
-										<button type="button" class="button woo-envios-remove-tier">&times;</button>
-									</td>
-								</tr>
-							<?php endforeach; ?>
-						</tbody>
-					</table>
+					<!-- Debug Tool -->
+					<div class="triqhub-card" style="background: #0f172a; border-radius: 12px; padding: 25px; color: white; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);">
+						<h3 style="margin: 0 0 15px 0; font-size: 16px; font-weight: 600; color: white;">Testar Cálculo</h3>
+						<input type="text" id="woo-envios-debug-address" placeholder="Digite um endereço para testar..." style="width: 100%; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px; padding: 10px; margin-bottom: 10px;">
+						<button type="button" class="button button-primary" id="woo-envios-debug-btn" style="width: 100%; border-radius: 8px; height: 40px; font-weight: 600;">Calcular Agora</button>
+						<div id="woo-envios-debug-results" style="margin-top: 15px; font-size: 12px; color: #94a3b8; display: none; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 6px;"></div>
+					</div>
+				</div>
+			</div>
 
-					<button type="button" class="button button-secondary" id="woo-envios-add-tier">
-						<?php esc_html_e( 'Adicionar faixa', 'woo-envios' ); ?>
-					</button>
-				</section>
+			<div style="margin-top: 30px;">
+				<?php submit_button( 'Salvar Configurações', 'button button-primary button-hero', 'submit', true, array( 'style' => 'border-radius: 10px; background: #0f172a; border: none; height: 50px; padding: 0 40px; font-weight: 600;' ) ); ?>
+			</div>
+		</form>
 
-				<?php submit_button(); ?>
-			</form>
-
-			<template id="woo-envios-tier-template">
-				<tr>
-					<td><input type="text" /></td>
-					<td><input type="number" min="0" step="0.1" /></td>
-					<td><input type="number" min="0" step="0.01" /></td>
-					<td><button type="button" class="button woo-envios-remove-tier">&times;</button></td>
-				</tr>
-			</template>
-		</div>
+		<template id="woo-envios-tier-template">
+			<tr>
+				<td><input type="text" style="width: 100%; border-radius: 6px;"></td>
+				<td><input type="number" step="0.1" style="width: 100%; border-radius: 6px;"></td>
+				<td><input type="number" step="0.01" style="width: 100%; border-radius: 6px;"></td>
+				<td><button type="button" class="button button-link-delete woo-envios-remove-tier">×</button></td>
+			</tr>
+		</template>
 		<?php
+		$connector->render_admin_footer();
 	}
 
 	/**

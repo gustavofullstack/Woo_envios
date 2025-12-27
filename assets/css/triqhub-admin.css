@@ -1,117 +1,115 @@
 :root {
-    --trq-bg: #ffffff;
-    --trq-bg-alt: #fafafa;
-    --trq-text: #111111;
-    --trq-text-muted: #666666;
-    --trq-border: #e4e4e7; /* Zinc-200 */
-    --trq-primary: #000000;
-    --trq-primary-hover: #333333;
-    --trq-radius: 4px;
+    --trq-bg: #f8fafc;
+    --trq-white: #ffffff;
+    --trq-text-dark: #0f172a;
+    --trq-text-muted: #64748b;
+    --trq-border: #e2e8f0;
+    --trq-primary: #0f172a;
+    --trq-accent: #3b82f6;
+    --trq-radius: 12px;
     --trq-font: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 /* TriqHub Generic Admin Wrapper */
 .triqhub-wrap {
     font-family: var(--trq-font);
-    color: var(--trq-text);
-    background: var(--trq-bg);
-    max-width: 1000px;
+    color: var(--trq-text-dark);
+    max-width: 1200px;
     margin: 20px auto;
-    padding: 40px;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05); /* Extremely subtle */
-    border: 1px solid var(--trq-border);
-    border-radius: var(--trq-radius);
-}
-
-.triqhub-header {
-    margin-bottom: 40px;
-    border-bottom: 1px solid var(--trq-border);
-    padding-bottom: 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.triqhub-header h1 {
-    font-size: 24px;
-    font-weight: 600;
-    color: var(--trq-text);
-    margin: 0;
-    letter-spacing: -0.5px;
 }
 
 .triqhub-card {
-    background: var(--trq-bg);
+    background: var(--trq-white);
     border: 1px solid var(--trq-border);
     border-radius: var(--trq-radius);
-    padding: 24px;
-    margin-bottom: 20px;
+    padding: 30px;
+    margin-bottom: 30px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
-.triqhub-card h2 {
-    font-size: 18px;
-    font-weight: 500;
+.triqhub-card h2, .triqhub-card h3 {
     margin-top: 0;
-    margin-bottom: 16px;
-    color: var(--trq-text);
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--trq-text-dark);
 }
 
-/* Inputs */
+/* Header Component */
+.triqhub-header {
+    background: var(--trq-white);
+    padding: 30px 40px;
+    border-bottom: 1px solid var(--trq-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 12px 12px 0 0;
+    margin-bottom: 0;
+}
+
+.triqhub-header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--trq-text-dark);
+    margin: 0;
+    letter-spacing: -0.025em;
+}
+
+/* Form Elements */
+.triqhub-form-group {
+    margin-bottom: 25px;
+}
+
+.triqhub-label {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 8px;
+    color: #334155;
+}
+
 .triqhub-input {
     width: 100%;
-    padding: 10px 12px;
-    border: 1px solid var(--trq-border);
-    border-radius: var(--trq-radius);
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+    padding: 10px;
     font-size: 14px;
-    transition: all 0.2s;
-    background: var(--trq-bg-alt);
-    color: var(--trq-text);
+    transition: border-color 0.2s;
 }
 
 .triqhub-input:focus {
+    border-color: var(--trq-accent);
     outline: none;
-    border-color: var(--trq-primary);
-    background: var(--trq-bg);
-    box-shadow: 0 0 0 1px var(--trq-primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 /* Buttons */
-.triqhub-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 10px 20px;
-    background: var(--trq-primary);
-    color: #ffffff;
-    font-size: 14px;
-    font-weight: 500;
-    border: none;
-    border-radius: var(--trq-radius);
-    cursor: pointer;
-    transition: background 0.2s;
-    text-decoration: none;
+.button.button-primary.button-hero {
+    border-radius: 10px !important;
+    background: #0f172a !important;
+    border: none !important;
+    height: 50px !important;
+    padding: 0 40px !important;
+    font-weight: 600 !important;
+    line-height: 50px !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
 }
 
-.triqhub-btn:hover {
-    background: var(--trq-primary-hover);
-    color: #ffffff;
+.button.button-primary.button-hero:hover {
+    background: #1e293b !important;
+    transform: translateY(-1px);
 }
 
-.triqhub-btn.secondary {
-    background: transparent;
-    border: 1px solid var(--trq-border);
-    color: var(--trq-text);
+/* Dashboard Specific */
+.triqhub-dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 24px;
+    padding: 40px;
 }
 
-.triqhub-btn.secondary:hover {
-    background: var(--trq-bg-alt);
-    border-color: var(--trq-text-muted);
+.plugin-card {
+    transition: transform 0.2s;
 }
 
-/* Toggles / Checkboxes */
-.triqhub-toggle {
-    position: relative;
-    display: inline-block;
-    width: 40px;
-    height: 20px;
+.plugin-card:hover {
+    transform: translateY(-4px);
 }

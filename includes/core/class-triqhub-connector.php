@@ -462,6 +462,46 @@ if ( ! class_exists( 'TriqHub_Connector' ) ) {
         }
 
         /**
+         * Render Standardized Admin Header for Plugin Subpages
+         */
+        public function render_admin_header( $title, $description = '', $actions = array() ) {
+            ?>
+            <div class="triqhub-wrap" style="background: #f8fafc; padding: 0; border: none; box-shadow: none; max-width: 1200px; margin: 20px auto;">
+                <div style="background: white; padding: 30px 40px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; border-radius: 12px 12px 0 0; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                    <div>
+                        <h1 style="margin: 0; font-size: 28px; font-weight: 700; color: #0f172a; letter-spacing: -0.025em;"><?php echo esc_html( $title ); ?></h1>
+                        <?php if ( $description ) : ?>
+                            <p style="margin: 5px 0 0 0; color: #64748b; font-size: 14px;"><?php echo esc_html( $description ); ?></p>
+                        <?php endif; ?>
+                    </div>
+                    <?php if ( ! empty( $actions ) ) : ?>
+                        <div style="display: flex; gap: 10px;">
+                            <?php foreach ( $actions as $action ) : ?>
+                                <a href="<?php echo esc_url( $action['link'] ); ?>" class="button <?php echo isset( $action['primary'] ) && $action['primary'] ? 'button-primary' : ''; ?> button-large" <?php echo isset( $action['target'] ) ? 'target="' . esc_attr( $action['target'] ) . '"' : ''; ?>>
+                                    <?php if ( isset( $action['icon'] ) ) : ?>
+                                        <span class="dashicons <?php echo esc_attr( $action['icon'] ); ?>" style="vertical-align: middle; margin-top: 4px;"></span>
+                                    <?php endif; ?>
+                                    <?php echo esc_html( $action['label'] ); ?>
+                                </a>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
+                </div>
+                <div style="padding: 40px;">
+            <?php
+        }
+
+        /**
+         * Render Standardized Admin Footer for Plugin Subpages
+         */
+        public function render_admin_footer() {
+            ?>
+                </div>
+            </div>
+            <?php
+        }
+
+        /**
          * Output JS for the Popup
          */
         public function activation_popup_script() {
