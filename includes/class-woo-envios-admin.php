@@ -987,6 +987,100 @@ if (!class_exists('Woo_Envios_Admin')) {
 							</div>
 						</div>
 
+						<!-- Dynamic Pricing Section -->
+						<div class="triqhub-card"
+							style="margin-bottom: 25px; background: white; border-radius: 12px; padding: 25px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+							<h3 style="margin-top: 0; font-size: 16px; font-weight: 600;">
+								<?php esc_html_e('Precificação Dinâmica & Clima', 'woo-envios'); ?>
+							</h3>
+
+							<div style="margin-bottom: 15px;">
+								<label style="display: flex; align-items: center; gap: 8px;">
+									<input type="checkbox" name="woo_envios_dynamic_pricing_enabled" value="1" <?php checked(get_option('woo_envios_dynamic_pricing_enabled', false), 1); ?>>
+									<strong><?php esc_html_e('Ativar Regras Dinâmicas', 'woo-envios'); ?></strong>
+								</label>
+							</div>
+
+							<div id="woo-envios-dynamic-settings"
+								style="<?php echo get_option('woo_envios_dynamic_pricing_enabled', false) ? '' : 'display:none;'; ?>">
+
+								<h4
+									style="margin: 15px 0 10px; font-size: 14px; border-bottom: 1px solid #f0f0f0; padding-bottom: 5px;">
+									Clima (OpenWeather)</h4>
+
+								<div style="margin-bottom: 10px;">
+									<label style="display: block; font-size: 12px; margin-bottom: 4px;">API Key
+										(OpenWeather)</label>
+									<input type="password" name="woo_envios_weather_api_key"
+										value="<?php echo esc_attr(get_option('woo_envios_weather_api_key')); ?>"
+										class="regular-text" style="width: 100%; border-radius: 6px;">
+								</div>
+
+								<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+									<div>
+										<label style="display: block; font-size: 11px; margin-bottom: 4px;">Mult. Chuva Leve</label>
+										<input type="number" step="0.1" name="woo_envios_rain_light_multiplier"
+											value="<?php echo esc_attr(get_option('woo_envios_rain_light_multiplier', '1.2')); ?>"
+											style="width: 100%; border-radius: 6px;">
+									</div>
+									<div>
+										<label style="display: block; font-size: 11px; margin-bottom: 4px;">Mult. Chuva
+											Forte</label>
+										<input type="number" step="0.1" name="woo_envios_rain_heavy_multiplier"
+											value="<?php echo esc_attr(get_option('woo_envios_rain_heavy_multiplier', '1.5')); ?>"
+											style="width: 100%; border-radius: 6px;">
+									</div>
+								</div>
+
+								<h4
+									style="margin: 15px 0 10px; font-size: 14px; border-bottom: 1px solid #f0f0f0; padding-bottom: 5px;">
+									Horários de Pico</h4>
+
+								<?php
+								$peak_hours = get_option('woo_envios_peak_hours', array());
+								if (empty($peak_hours) || !is_array($peak_hours)) {
+									$peak_hours = array(array('start' => '18:00', 'end' => '22:00', 'multiplier' => '1.5', 'label' => 'Noite'));
+								}
+								?>
+
+								<div id="woo-envios-peak-container">
+									<?php foreach ($peak_hours as $idx => $peak): ?>
+										<div class="peak-row" style="display: flex; gap: 5px; margin-bottom: 8px;">
+											<input type="text" name="woo_envios_peak_hours[<?php echo $idx; ?>][start]"
+												value="<?php echo esc_attr($peak['start'] ?? ''); ?>" placeholder="18:00"
+												style="width: 60px; border-radius: 4px;">
+											<span style="align-self: center;">-</span>
+											<input type="text" name="woo_envios_peak_hours[<?php echo $idx; ?>][end]"
+												value="<?php echo esc_attr($peak['end'] ?? ''); ?>" placeholder="22:00"
+												style="width: 60px; border-radius: 4px;">
+											<input type="number" step="0.1"
+												name="woo_envios_peak_hours[<?php echo $idx; ?>][multiplier]"
+												value="<?php echo esc_attr($peak['multiplier'] ?? '1.0'); ?>"
+												style="width: 50px; border-radius: 4px;" placeholder="x">
+											<input type="hidden" name="woo_envios_peak_hours[<?php echo $idx; ?>][label]"
+												value="<?php echo esc_attr($peak['label'] ?? 'Pico'); ?>">
+										</div>
+									<?php endforeach; ?>
+								</div>
+
+								<div style="margin-top: 15px;">
+									<label style="display: block; font-size: 12px; margin-bottom: 4px;">Mult. Fim de Semana</label>
+									<input type="number" step="0.1" name="woo_envios_weekend_multiplier"
+										value="<?php echo esc_attr(get_option('woo_envios_weekend_multiplier', '1.2')); ?>"
+										style="width: 100%; border-radius: 6px;">
+								</div>
+
+								<div style="margin-top: 10px;">
+									<label style="display: block; font-size: 12px; margin-bottom: 4px;">Multiplicador Máximo
+										(Teto)</label>
+									<input type="number" step="0.1" name="woo_envios_max_multiplier"
+										value="<?php echo esc_attr(get_option('woo_envios_max_multiplier', '2.0')); ?>"
+										style="width: 100%; border-radius: 6px;">
+								</div>
+
+							</div>
+						</div>
+
 						<!-- Debug Tool -->
 						<div class="triqhub-card"
 							style="background: #0f172a; border-radius: 12px; padding: 25px; color: white; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);">
