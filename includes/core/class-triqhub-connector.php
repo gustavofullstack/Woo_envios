@@ -69,16 +69,177 @@ if ( ! class_exists( 'TriqHub_Connector' ) ) {
             );
         }
 
+
         public function render_dashboard_page() {
+            // Define all TriqHub plugins
+            $all_plugins = array(
+                'triqhub-thank-you/triqhub-thank-you.php' => array(
+                    'name' => 'TriqHub: Thank You Page',
+                    'icon' => 'dashicons-cart',
+                    'color' => '#7c3aed',
+                    'description' => 'Páginas de agradecimento personalizadas pós-checkout'
+                ),
+                'triqhub-reviews/triqhub-reviews.php' => array(
+                    'name' => 'TriqHub: Reviews',
+                    'icon' => 'dashicons-star-filled',
+                    'color' => '#f59e0b',
+                    'description' => 'Sistema completo de avaliações e depoimentos'
+                ),
+                'triqhub-custom-login/triqhub-custom-login.php' => array(
+                    'name' => 'TriqHub: Custom Login',
+                    'icon' => 'dashicons-admin-users',
+                    'color' => '#10b981',
+                    'description' => 'Páginas de login personalizadas e seguras'
+                ),
+                'triqhub-shipping-radius/triqhub-shipping-radius.php' => array(
+                    'name' => 'TriqHub: Shipping & Radius',
+                    'icon' => 'dashicons-location',
+                    'color' => '#3b82f6',
+                    'description' => 'Entregas por raio e integração com transportadoras'
+                ),
+            );
+
+            // Get all active plugins
+            $active_plugins = get_option('active_plugins', array());
+            
+            // Get global license
+            $license_key = get_option('triqhub_license_key', '');
+            $is_connected = !empty($license_key);
+            $connect_url = "https://triqhub.com/dashboard/activate?domain=" . urlencode(home_url()) . "&callback=" . urlencode(home_url('/?triqhub_action=webhook'));
+            
             ?>
             <div class="wrap">
-                <h1>TriqHub Dashboard</h1>
-                <p>Bem-vindo ao centro de controle dos seus plugins TriqHub.</p>
-                <h2 class="nav-tab-wrapper">
-                    <a href="?page=triqhub" class="nav-tab nav-tab-active">Visão Geral</a>
-                    <a href="?page=triqhub-license" class="nav-tab">Licença</a>
-                </h2>
-                <!-- Dashboard widgets or active plugins list here -->
+                <h1 class="wp-heading-inline">
+                    <span class="dashicons dashicons-cloud" style="color: #7c3aed; font-size: 32px; width: 32px; height: 32px; vertical-align: middle;"></span>
+                    TriqHub Dashboard
+                </h1>
+                <hr class="wp-header-end">
+
+                <!-- License Status Card -->
+                <div style="background: white; padding: 20px; margin: 20px 0; border-left: 4px solid <?php echo $is_connected ? '#10b981' : '#f59e0b'; ?>; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div>
+                            <h2 style="margin: 0 0 10px 0; font-size: 18px;">
+                                <?php if ($is_connected): ?>
+                                    <span class="dashicons dashicons-yes-alt" style="color: #10b981;"></span>
+                                    Licença Global Conectada
+                                <?php else: ?>
+                                    <span class="dashicons dashicons-warning" style="color: #f59e0b;"></span>
+                                    Licença Não Conectada
+                                <?php endif; ?>
+                            </h2>
+                            <?php if ($is_connected): ?>
+                                <p style="margin: 0; color: #6b7280;">
+                                    <strong>Chave:</strong> <code style="background: #f3f4f6; padding: 4px 8px; border-radius: 4px;"><?php echo esc_html(substr($license_key, 0, 8)) . '...'; ?></code>
+                                </p>
+                            <?php else: ?>
+                                <p style="margin: 0; color: #6b7280;">
+                                    Conecte sua licença para ativar todos os plugins TriqHub de uma vez.
+                                </p>
+                            <?php endif; ?>
+                        </div>
+                        <div>
+                            <?php if (!$is_connected): ?>
+                                <a href="#" id="triqhub-connect-global" class="button button-primary button-hero" style="background: #7c3aed; border-color: #6d28d9; text-shadow: none; box-shadow: none;">
+                                    <span class="dashicons dashicons-cloud" style="vertical-align: middle;"></span>
+                                    Conectar Licença
+                                </a>
+                            <?php else: ?>
+                                <a href="?page=triqhub-license" class="button">
+                                    Gerenciar Licença
+                                </a>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Plugins Grid -->
+                <h2 style="margin-top: 30px;">Seus Plugins TriqHub</h2>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin-top: 20px;">
+                    <?php foreach ($all_plugins as $plugin_file => $plugin_data): 
+                        $is_installed = in_array($plugin_file, $active_plugins);
+                        $plugin_info = null;
+                        if ($is_installed && function_exists('get_plugin_data')) {
+                            $plugin_path = WP_PLUGIN_DIR . '/' . $plugin_file;
+                            if (file_exists($plugin_path)) {
+                                $plugin_info = get_plugin_data($plugin_path);
+                            }
+                        }
+                    ?>
+                        <div style="background: white; border: 2px solid <?php echo $is_installed ? $plugin_data['color'] : '#e5e7eb'; ?>; border-radius: 8px; padding: 20px; position: relative; transition: all 0.2s;">
+                            <!-- Status Badge -->
+                            <div style="position: absolute; top: 15px; right: 15px;">
+                                <?php if ($is_installed): ?>
+                                    <span style="background: <?php echo $plugin_data['color']; ?>; color: white; padding: 4px 12px; border-radius: 12px; font-size: 11px; font-weight: 600; text-transform: uppercase;">
+                                        Instalado
+                                    </span>
+                                <?php else: ?>
+                                    <span style="background: #e5e7eb; color: #6b7280; padding: 4px 12px; border-radius: 12px; font-size: 11px; font-weight: 600; text-transform: uppercase;">
+                                        Não Instalado
+                                    </span>
+                                <?php endif; ?>
+                            </div>
+
+                            <!-- Plugin Icon -->
+                            <div style="width: 50px; height: 50px; background: <?php echo $plugin_data['color']; ?>; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 15px;">
+                                <span class="dashicons <?php echo $plugin_data['icon']; ?>" style="color: white; font-size: 28px; width: 28px; height: 28px;"></span>
+                            </div>
+
+                            <!-- Plugin Info -->
+                            <h3 style="margin: 0 0 8px 0; font-size: 16px; color: #111827;">
+                                <?php echo esc_html($plugin_data['name']); ?>
+                            </h3>
+                            <p style="margin: 0 0 12px 0; color: #6b7280; font-size: 13px; line-height: 1.5;">
+                                <?php echo esc_html($plugin_data['description']); ?>
+                            </p>
+
+                            <?php if ($is_installed && $plugin_info): ?>
+                                <div style="padding-top: 12px; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="color: #9ca3af; font-size: 12px;">
+                                        Versão <?php echo esc_html($plugin_info['Version']); ?>
+                                    </span>
+                                    <span class="dashicons dashicons-yes" style="color: <?php echo $plugin_data['color']; ?>;"></span>
+                                </div>
+                            <?php else: ?>
+                                <div style="padding-top: 12px; border-top: 1px solid #e5e7eb;">
+                                    <a href="https://triqhub.com/plugins" target="_blank" style="color: #7c3aed; text-decoration: none; font-size: 13px;">
+                                        Baixar Plugin →
+                                    </a>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+
+                <!-- Quick Actions -->
+                <div style="margin-top: 30px; background: #f9fafb; padding: 20px; border-radius: 8px;">
+                    <h3 style="margin: 0 0 15px 0;">Ações Rápidas</h3>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <a href="?page=triqhub-license" class="button">
+                            <span class="dashicons dashicons-admin-network" style="vertical-align: middle;"></span>
+                            Gerenciar Licenças
+                        </a>
+                        <a href="https://triqhub.com/plugins" class="button" target="_blank">
+                            <span class="dashicons dashicons-download" style="vertical-align: middle;"></span>
+                            Baixar Plugins
+                        </a>
+                        <a href="https://github.com/gustavofullstack" class="button" target="_blank">
+                            <span class="dashicons dashicons-editor-code" style="vertical-align: middle;"></span>
+                            Ver no GitHub
+                        </a>
+                    </div>
+                </div>
+
+                <script type="text/javascript">
+                jQuery(document).ready(function($) {
+                    $('#triqhub-connect-global').on('click', function(e) {
+                        e.preventDefault();
+                        var w = 600; var h = 700;
+                        var left = (screen.width/2)-(w/2); var top = (screen.height/2)-(h/2);
+                        window.open('<?php echo $connect_url; ?>', 'TriqHubActivation', 'width='+w+', height='+h+', top='+top+', left='+left);
+                    });
+                });
+                </script>
             </div>
             <?php
         }
