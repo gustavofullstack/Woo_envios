@@ -146,9 +146,9 @@ final class Woo_Envios_Plugin {
 
         if ( class_exists( 'YahnisElsts\PluginUpdateChecker\v5\PucFactory' ) ) {
             $myUpdateChecker = \YahnisElsts\PluginUpdateChecker\v5\PucFactory::buildUpdateChecker(
-                'https://github.com/gustavofullstack/Woo_envios',
+                'https://github.com/gustavofullstack/triqhub-shipping-radius',
                 __FILE__,
-                'woo-envios'
+                'triqhub-shipping-radius'
             );
             
             // Set the branch that contains the stable release.
