@@ -113,3 +113,6 @@ local-config.php
 # Documentação gerada
 # ===========================================
 docs/_build/
+
+# Local IDE Stubs
+triqhub-ide-stubs.php
