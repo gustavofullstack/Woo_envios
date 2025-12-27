@@ -1,493 +1,592 @@
 # TriqHub Shipping & Radius - Architecture Documentation
 
-## 1. System Overview
+## System Overview
 
-TriqHub Shipping & Radius is a sophisticated WooCommerce extension that provides intelligent, radius-based shipping calculations with dynamic pricing, real-time geocoding, and multi-carrier integration. The system combines local delivery (Flash Delivery) with national carrier services (Correios/SuperFrete) to offer comprehensive shipping solutions for Brazilian e-commerce.
+TriqHub Shipping & Radius is a sophisticated WooCommerce extension that provides intelligent, radius-based shipping calculations with dynamic pricing, real-time geocoding, and multi-carrier integration. The system combines local delivery calculations with national shipping services through a modular, fault-tolerant architecture.
 
-### 1.1 Core Architecture Principles
+## Core Architectural Principles
 
-- **Modular Design**: Independent components with clear interfaces
-- **Fault Tolerance**: Circuit breakers, fallback mechanisms, and graceful degradation
-- **Performance Optimization**: Caching strategies at multiple levels
-- **Extensibility**: Hook-based architecture for custom integrations
-- **Observability**: Comprehensive logging and monitoring capabilities
+### 1. **Singleton Pattern with Dependency Injection**
+The main plugin class follows a singleton pattern with lazy initialization, ensuring single instance management while maintaining testability through explicit dependency loading.
 
-## 2. System Architecture Diagram
+### 2. **Circuit Breaker Pattern**
+External API calls (Google Maps, OpenWeather) implement circuit breakers to prevent cascading failures and ensure graceful degradation.
+
+### 3. **Multi-Layer Caching Strategy**
+- **Geocode Cache**: Database table for Google Maps API responses (30-day TTL)
+- **Weather Cache**: WordPress transients (1-hour TTL)
+- **Session Cache**: Customer coordinates stored in WooCommerce session
+
+### 4. **Plugin Update System**
+Dual-update mechanism supporting both GitHub-based updates (via Plugin Update Checker) and traditional WordPress update system.
+
+## System Architecture Diagram
 
 ```mermaid
 graph TB
-    subgraph "WordPress Environment"
+    subgraph "WordPress/WooCommerce Layer"
         WP[WordPress Core]
         WC[WooCommerce]
+        WC_Session[WooCommerce Session]
     end
-    
+
     subgraph "TriqHub Shipping Plugin"
-        PLUGIN[Main Plugin Bootstrap]
+        Main[TriqHub_Shipping_Plugin<br/>Singleton Controller]
         
         subgraph "Core Services"
-            GEO[Geocoder Service]
-            GMAPS[Google Maps API]
-            WEATHER[Weather Service]
-            LOGGER[Logger Service]
-            UPDATER[Update Service]
+            Geo[Geocoder Service]
+            GMaps[Google Maps API]
+            Weather[Weather Service]
+            Logger[Logger Service]
+            Connector[TriqHub Connector]
         end
         
         subgraph "Shipping Methods"
-            RADIUS[Radius Shipping]
-            SUPERFRETE[SuperFrete Shipping]
-            CORREIOS[Correios Integration]
+            Radius[Radius Shipping Method]
+            SuperFrete[SuperFrete Shipping]
+            Correios[Correios Integration]
         end
         
         subgraph "Admin Interface"
-            ADMIN[Admin Settings]
-            GMAPS_ADMIN[Google Maps Admin]
+            Admin[Admin Settings]
+            GMaps_Admin[Google Maps Admin]
         end
         
-        subgraph "Frontend Components"
-            CHECKOUT[Checkout Integration]
-            ASSETS[Frontend Assets]
+        subgraph "Frontend"
+            Checkout[Checkout Integration]
+            Assets[Frontend Assets]
         end
         
-        subgraph "External Integrations"
-            TRQ_CONN[TriqHub Connector]
-            API_GOOGLE[Google Maps API]
-            API_OPENWEATHER[OpenWeather API]
-            API_SUPERFRETE[SuperFrete API]
+        subgraph "Update System"
+            Updater[Plugin Updater]
+            GitHub[GitHub Integration]
         end
         
         subgraph "Data Layer"
-            CACHE_TABLE[Geocode Cache Table]
-            WP_OPTIONS[WordPress Options]
-            WC_SESSION[WooCommerce Session]
+            CacheDB[(Geocode Cache DB)]
+            Options[(WordPress Options)]
+            Transients[(WP Transients)]
         end
     end
-    
+
+    subgraph "External APIs"
+        Google[Google Maps API]
+        OpenWeather[OpenWeather API]
+        SuperFreteAPI[SuperFrete API]
+        CorreiosAPI[Correios API]
+        TriqHubAPI[TriqHub License API]
+    end
+
     %% Data Flow
-    WP --> PLUGIN
-    WC --> PLUGIN
+    WP --> Main
+    WC --> Main
+    Main --> Core_Services
+    Main --> Shipping_Methods
+    Main --> Admin_Interface
+    Main --> Frontend
+    Main --> Update_System
     
-    PLUGIN --> CORE_SERVICES
-    PLUGIN --> SHIPPING_METHODS
-    PLUGIN --> ADMIN_INTERFACE
-    PLUGIN --> FRONTEND_COMPONENTS
+    Geo --> GMaps
+    GMaps --> Google
+    Weather --> OpenWeather
+    Radius --> Geo
+    Radius --> Weather
+    SuperFrete --> SuperFreteAPI
+    Correios --> CorreiosAPI
+    Connector --> TriqHubAPI
     
-    CORE_SERVICES --> EXTERNAL_INTEGRATIONS
-    SHIPPING_METHODS --> DATA_LAYER
-    ADMIN_INTERFACE --> DATA_LAYER
+    Geo --> CacheDB
+    Weather --> Transients
+    Admin --> Options
+    Updater --> GitHub
     
-    %% Service Dependencies
-    GEO --> GMAPS
-    RADIUS --> GEO
-    RADIUS --> WEATHER
-    SUPERFRETE --> CORREIOS
+    Checkout --> WC_Session
+    Radius --> WC_Session
     
-    %% External Connections
-    GMAPS --> API_GOOGLE
-    WEATHER --> API_OPENWEATHER
-    SUPERFRETE --> API_SUPERFRETE
-    TRQ_CONN --> TRQ_SERVER[TriqHub License Server]
-    
-    %% Data Storage
-    GEO --> CACHE_TABLE
-    ADMIN --> WP_OPTIONS
-    CHECKOUT --> WC_SESSION
-    
-    classDef core fill:#e1f5fe,stroke:#01579b
-    classDef service fill:#f3e5f5,stroke:#4a148c
-    classDef external fill:#e8f5e8,stroke:#1b5e20
-    classDef data fill:#fff3e0,stroke:#e65100
-    
-    class PLUGIN,GEO,GMAPS,WEATHER,LOGGER,UPDATER core
-    class RADIUS,SUPERFRETE,CORREIOS,ADMIN,GMAPS_ADMIN,CHECKOUT,ASSETS service
-    class TRQ_CONN,API_GOOGLE,API_OPENWEATHER,API_SUPERFRETE external
-    class CACHE_TABLE,WP_OPTIONS,WC_SESSION data
+    %% Caching Flow
+    GMaps -.->|Cache Miss| Google
+    GMaps -.->|Cache Hit| CacheDB
+    Weather -.->|Cache Miss| OpenWeather
+    Weather -.->|Cache Hit| Transients
 ```
 
-## 3. Core Module Architecture
+## Component Architecture
 
-### 3.1 Plugin Bootstrap (`triqhub-shipping-radius.php`)
+### 1. **Main Plugin Controller (`TriqHub_Shipping_Plugin`)**
 
-**Responsibilities**:
-- Plugin initialization and lifecycle management
-- Dependency validation (WordPress, WooCommerce)
-- Singleton pattern implementation
-- Hook registration and component orchestration
+**Responsibilities:**
+- Plugin lifecycle management
+- Dependency loading orchestration
+- Hook registration and event dispatching
+- Self-healing mechanisms (cache table creation)
 
-**Key Components**:
+**Key Methods:**
 ```php
-class Woo_Envios_Plugin {
-    private static $instance = null;
-    
-    // Core initialization sequence
-    private function __construct() {
-        $this->define_constants();
-        $this->include_files();
-        $this->load_components();
-        $this->register_hooks();
-    }
-    
-    // Self-healing mechanisms
-    private function maybe_create_cache_table();
-    
-    // Update management
-    private function init_updater();
-}
+public static function instance(): TriqHub_Shipping_Plugin
+private function define_constants(): void
+private function include_files(): void  // Ordered dependency loading
+private function load_components(): void
+private function register_hooks(): void
+public function activate(): void
+private function create_google_cache_table(): void
+private function maybe_create_cache_table(): void  // Self-healing
 ```
 
-### 3.2 Class Hierarchy and Relationships
+**Dependency Loading Order:**
+1. Logger (no dependencies)
+2. Google Maps API client
+3. Geocoder service
+4. Shipping services (Correios, SuperFrete)
+5. Admin interfaces
+6. Checkout integration
 
+### 2. **Geocoding System**
+
+#### Class Hierarchy:
 ```mermaid
 classDiagram
-    class Woo_Envios_Plugin {
-        -static $instance
-        +VERSION
-        -__construct()
-        +instance() Woo_Envios_Plugin
-        -define_constants()
-        -include_files()
-        -load_components()
-        -register_hooks()
-        +register_shipping_method(array) array
-        +sort_shipping_rates(array, array) array
-        +activate() void
-    }
-    
-    class WC_Shipping_Method {
-        <<Abstract>>
-        #id
-        #method_title
-        #method_description
-        #instance_id
-        #supports
-        #enabled
-        #title
-        +get_option(string, mixed) mixed
-        +init_instance_settings()
-        +add_rate(array)
-        +calculate_shipping(array)
-    }
-    
-    class Woo_Envios_Shipping_Method {
-        -__construct(int)
-        +init() void
-        +calculate_shipping(array) void
-        -get_session_coordinates(string) array|null
-        -calculate_distance(float, float, float, float) float
-        -calculate_route_distance(array, array, array) array|WP_Error
-        -calculate_dynamic_multiplier(array) array
-        -calculate_correios_shipping(array) void
-    }
-    
     class Woo_Envios_Google_Maps {
-        -api_key
-        -cache_ttl
-        -api_urls
+        -api_key: string
+        -cache_ttl: int
+        -api_urls: array
         +is_configured() bool
-        +geocode(string) array|WP_Error
-        +calculate_distance(string, string) array|WP_Error
-        -make_api_request(string, array, int) array|WP_Error
-        -check_circuit_breaker() bool
+        +geocode(address) array
+        +calculate_distance(origin, destination) array
+        -make_api_request(endpoint, params) array
+        -validate_api_key_format(key) bool
+        -is_circuit_open() bool
         -record_failure() void
         -record_success() void
     }
     
-    class Woo_Envios_Weather {
-        -API_URL
-        -CACHE_DURATION
-        +get_weather_multiplier(float, float) float
-        -get_current_weather(float, float, string) array|null
-        -calculate_rain_multiplier(array) float
-        +clear_cache() void
+    class Geocoder {
+        -google_maps: Woo_Envios_Google_Maps
+        +geocode(address) array
+        +reverse_geocode(lat, lng) array
+        -get_cache_key(address) string
+        -save_to_cache(key, data) void
+        -get_from_cache(key) array|null
     }
     
-    class Woo_Envios_Logger {
-        +shipping_calculated(float, float, float, array, string, array, array) void
-        +error(string) void
-        +info(string) void
-        +warning(string) void
-        +api_failure(string, string) void
-        +circuit_breaker_opened(int) void
-        -notify_admin_api_failure(int) void
-        +cleanup_old_logs() void
+    class Woo_Envios_Shipping_Method {
+        -calculate_route_distance(store, customer, package) array
+        -calculate_distance(lat1, lng1, lat2, lng2) float
+        -get_session_coordinates(signature) array|null
+        -build_destination_signature(package) string
     }
     
-    class Woo_Envios_Admin {
-        +get_store_coordinates() array
-        +match_tier_by_distance(float) array|false
-        +save_settings() void
-        -render_settings_page() void
-        -validate_coordinates(array) bool
-    }
-    
-    class Woo_Envios_Checkout {
-        -__construct()
-        +enqueue_checkout_scripts() void
-        +add_checkout_fields(array) array
-        +process_checkout_fields() void
-        +update_order_meta(int, array) void
-        -ajax_geocode_address() void
-    }
-    
-    class "Woo_Envios\Services\Geocoder" {
-        +geocode(string) array|false
-        -geocode_via_google(string) array|false
-        -geocode_via_correios(string) array|false
-        -save_to_cache(string, array) void
-        -get_from_cache(string) array|false
-        -normalize_address(string) string
-    }
-    
-    class "Woo_Envios\Services\Woo_Envios_Correios" {
-        +is_enabled() bool
-        +calculate(array) array|false
-        -build_package_data(array) array
-        -call_superfrete_api(array) array|WP_Error
-        -parse_api_response(array) array
-        -validate_package(array) bool
-    }
-    
-    class "Woo_Envios\Services\Woo_Envios_Superfrete_Shipping_Method" {
-        +__construct(int)
-        +init() void
-        +calculate_shipping(array) void
-        -get_correios_services() array
-        -filter_services_by_zone(array, array) array
-        -calculate_service_cost(array, array) float|false
-    }
-    
-    class TriqHub_Connector {
-        -api_key
-        -plugin_slug
-        -endpoint
-        +__construct(string, string)
-        -validate_license() bool
-        -send_usage_data(array) void
-        -check_for_updates() array|false
-        -handle_api_response(array) void
-    }
-    
-    %% Inheritance Relationships
-    WC_Shipping_Method <|-- Woo_Envios_Shipping_Method
-    WC_Shipping_Method <|-- "Woo_Envios\Services\Woo_Envios_Superfrete_Shipping_Method"
-    
-    %% Composition Relationships
-    Woo_Envios_Plugin "1" *-- "1..*" WC_Shipping_Method : manages
-    Woo_Envios_Shipping_Method "1" *-- "1" Woo_Envios_Google_Maps : uses
-    Woo_Envios_Shipping_Method "1" *-- "1" Woo_Envios_Weather : uses
-    Woo_Envios_Shipping_Method "1" *-- "1" "Woo_Envios\Services\Geocoder" : uses
-    Woo_Envios_Shipping_Method "1" *-- "1" "Woo_Envios\Services\Woo_Envios_Correios" : uses
-    Woo_Envios_Plugin "1" *-- "1" TriqHub_Connector : contains
-    Woo_Envios_Admin "1" *-- "1" Woo_Envios_Google_Maps : configures
+    Woo_Envios_Google_Maps --> Geocoder : provides
+    Geocoder --> Woo_Envios_Shipping_Method : used by
 ```
 
-## 4. Data Flow Architecture
+**Geocoding Flow:**
+1. Address normalization and signature generation
+2. Session cache check (coordinates stored with address signature)
+3. Database cache check (geocode_cache table)
+4. Google Maps API call (with circuit breaker protection)
+5. Result caching (session + database)
 
-### 4.1 Shipping Calculation Flow
+**Cache Table Schema:**
+```sql
+CREATE TABLE wp_woo_envios_geocode_cache (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    cache_key VARCHAR(64) UNIQUE NOT NULL,
+    result_data LONGTEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    expires_at DATETIME NOT NULL,
+    INDEX expires_at (expires_at)
+)
+```
+
+### 3. **Shipping Calculation Engine**
+
+#### Multi-Tier Shipping Architecture:
 
 ```mermaid
 sequenceDiagram
     participant Customer
-    participant Checkout as WooCommerce Checkout
-    participant Session as WC Session
-    participant Shipping as Woo_Envios_Shipping
-    participant Geocoder as Geocoder Service
-    participant GMaps as Google Maps API
-    participant Cache as Geocode Cache
-    participant Weather as Weather Service
-    participant OW as OpenWeather API
-    participant Correios as Correios Service
-    participant SF as SuperFrete API
-    participant Rates as Shipping Rates
+    participant Checkout
+    participant ShippingMethod
+    participant Geocoder
+    participant DistanceMatrix
+    participant PriceCalculator
+    participant CorreiosAPI
+    participant Session
 
-    Customer->>Checkout: Enters shipping address
-    Checkout->>Session: Store address in session
-    Checkout->>Shipping: Trigger calculate_shipping()
+    Customer->>Checkout: Enters address
+    Checkout->>Geocoder: Geocode address (async)
+    Geocoder->>Session: Store coordinates
+    Checkout->>ShippingMethod: calculate_shipping()
     
-    Shipping->>Session: Get coordinates via get_session_coordinates()
+    ShippingMethod->>Session: Get cached coordinates
     alt Coordinates in session
-        Session-->>Shipping: Return cached coordinates
-    else No coordinates in session
-        Shipping->>Geocoder: Call geocode(address)
-        Geocoder->>Cache: Check cache for address
-        alt Cached coordinates exist
-            Cache-->>Geocoder: Return cached data
-        else Not cached
-            Geocoder->>GMaps: Call Google Geocoding API
-            GMaps-->>Geocoder: Return coordinates
-            Geocoder->>Cache: Store in cache table
-        end
-        Geocoder-->>Shipping: Return coordinates
-        Shipping->>Session: Store coordinates in session
+        Session-->>ShippingMethod: Return coordinates
+    else No coordinates
+        ShippingMethod->>Geocoder: Server-side geocode
+        Geocoder-->>ShippingMethod: Return coordinates
+        ShippingMethod->>Session: Store coordinates
     end
     
-    Shipping->>GMaps: Calculate route distance via Distance Matrix
-    GMaps-->>Shipping: Return distance in meters
+    ShippingMethod->>DistanceMatrix: Calculate route distance
+    alt Distance Matrix available
+        DistanceMatrix-->>ShippingMethod: Real route distance
+    else API failure
+        ShippingMethod->>ShippingMethod: Haversine fallback
+    end
     
-    Shipping->>Weather: Get weather multiplier
-    Weather->>OW: Call OpenWeather API
-    OW-->>Weather: Return weather data
-    Weather-->>Shipping: Return multiplier (1.0-1.5)
+    ShippingMethod->>PriceCalculator: Match distance to tier
+    PriceCalculator-->>ShippingMethod: Base price
     
-    Shipping->>Shipping: Calculate dynamic multipliers (peak hours, weekend)
+    ShippingMethod->>PriceCalculator: Apply dynamic multipliers
+    PriceCalculator->>PriceCalculator: Check peak hours
+    PriceCalculator->>PriceCalculator: Check weekend
+    PriceCalculator->>PriceCalculator: Check weather
+    PriceCalculator-->>ShippingMethod: Final price
     
-    Shipping->>Correios: Calculate Correios shipping options
-    Correios->>SF: Call SuperFrete API
-    SF-->>Correios: Return shipping quotes
-    Correios-->>Shipping: Return rate options
+    ShippingMethod->>CorreiosAPI: Calculate national shipping
+    CorreiosAPI-->>ShippingMethod: Correios rates
     
-    Shipping->>Shipping: Apply all multipliers to base price
-    Shipping->>Shipping: Validate against maximum multiplier limit
-    
-    Shipping->>Rates: Add Flash Delivery rate (if within radius)
-    Shipping->>Rates: Add Correios rates (PAC/SEDEX/Mini)
-    
-    Rates-->>Checkout: Display sorted rates (Flash first)
-    Checkout-->>Customer: Show shipping options
+    ShippingMethod-->>Checkout: Return combined rates
+    Checkout-->>Customer: Display shipping options
 ```
 
-### 4.2 Admin Configuration Flow
+**Shipping Calculation Process:**
+1. **Coordinate Resolution**
+   - Session-based coordinate caching
+   - Server-side fallback geocoding
+   - Address signature matching
 
-```mermaid
-sequenceDiagram
-    participant Admin
-    participant AdminUI as Admin Interface
-    participant Settings as WP Options
-    participant GMapsAdmin as Google Maps Admin
-    participant GMapsAPI as Google Maps API
-    participant CacheTable as Cache Table
-    participant Logger as Logger Service
+2. **Distance Calculation**
+   - Primary: Google Distance Matrix API (real routes)
+   - Fallback: Haversine formula (straight-line)
+   - Circuit breaker protection
 
-    Admin->>AdminUI: Access Woo Envios settings
-    AdminUI->>Settings: Load current configuration
-    Settings-->>AdminUI: Return stored settings
-    
-    Admin->>AdminUI: Update store coordinates
-    AdminUI->>GMapsAPI: Validate coordinates via Geocoding API
-    GMapsAPI-->>AdminUI: Return validation result
-    AdminUI->>Settings: Save validated coordinates
-    
-    Admin->>AdminUI: Configure Google Maps API key
-    AdminUI->>GMapsAdmin: Test API connection
-    GMapsAdmin->>GMapsAPI: Make test request
-    GMapsAPI-->>GMapsAdmin: Return API status
-    GMapsAdmin->>Logger: Log connection result
-    GMapsAdmin-->>AdminUI: Display connection status
-    
-    Admin->>AdminUI: Clear geocode cache
-    AdminUI->>CacheTable: Delete all cache entries
-    CacheTable-->>AdminUI: Confirm deletion
-    AdminUI->>Logger: Log cache clearance
-    
-    Admin->>AdminUI: Configure shipping tiers
-    AdminUI->>Settings: Save tier configuration
-    Settings-->>AdminUI: Confirm save
-    
-    Admin->>AdminUI: Enable/disable logging
-    AdminUI->>Logger: Update logging configuration
-    Logger-->>AdminUI: Confirm configuration update
-```
+3. **Price Determination**
+   - Distance-to-tier matching
+   - Dynamic multiplier application:
+     - Peak hour multipliers (configurable periods)
+     - Weekend surcharges
+     - Weather-based adjustments (rain detection)
+   - Maximum multiplier enforcement
 
-## 5. Component Architecture Details
+4. **Multi-Carrier Integration**
+   - Local delivery (Flash) for in-radius customers
+   - Correios/SuperFrete for out-of-radius destinations
+   - Rate sorting (Flash always on top)
 
-### 5.1 Geocoding Service Architecture
+### 4. **Dynamic Pricing System**
 
-**Primary Responsibilities**:
-- Convert addresses to geographic coordinates
-- Implement multi-source fallback (Google Maps → Correios)
-- Manage caching with TTL-based expiration
-- Handle API failures with circuit breakers
+**Multiplier Sources:**
+1. **Time-Based**
+   ```php
+   $peak_hours = [
+       [
+           'name' => 'Almoço',
+           'start' => '11:30',
+           'end' => '13:30',
+           'multiplier' => 1.2
+       ],
+       [
+           'name' => 'Jantar',
+           'start' => '18:00',
+           'end' => '20:00',
+           'multiplier' => 1.3
+       ]
+   ];
+   ```
 
-**Cache Strategy**:
-```php
-// Cache table structure
-CREATE TABLE wp_woo_envios_geocode_cache (
-    id BIGINT UNSIGNED AUTO_INCREMENT,
-    cache_key VARCHAR(64) NOT NULL,      // MD5 hash of normalized address
-    result_data LONGTEXT NOT NULL,       // JSON-encoded geocode result
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    expires_at DATETIME NOT NULL,        // TTL-based expiration
-    PRIMARY KEY (id),
-    UNIQUE KEY cache_key (cache_key),
-    KEY expires_at (expires_at)
-);
-```
+2. **Weather-Based**
+   - OpenWeather API integration
+   - Rain intensity detection (light/heavy)
+   - Configurable multipliers per condition
+   - 1-hour cache duration
 
-**Fallback Mechanism**:
-1. Primary: Google Maps Geocoding API
-2. Secondary: Correios CEP lookup (Brazil-specific)
-3. Tertiary: Default coordinates (configurable)
+3. **Day-Based**
+   - Weekend surcharges
+   - Configurable via admin settings
 
-### 5.2 Dynamic Pricing Engine
-
-**Multiplier Sources**:
-1. **Time-based**: Peak hours configuration
-2. **Calendar-based**: Weekend surcharges
-3. **Weather-based**: Rain/thunderstorm adjustments
-4. **Configurable Limits**: Maximum multiplier caps
-
-**Calculation Formula**:
+**Calculation Formula:**
 ```
 final_price = base_price × peak_multiplier × weekend_multiplier × weather_multiplier
 final_price = min(final_price, base_price × max_multiplier)
 ```
 
-### 5.3 Circuit Breaker Pattern Implementation
+### 5. **Error Handling & Resilience**
 
-**Failure Tracking**:
+#### Circuit Breaker Implementation:
 ```php
 class Woo_Envios_Google_Maps {
     private const MAX_CONSECUTIVE_FAILURES = 5;
     
-    private function check_circuit_breaker(): bool {
-        $failures = (int) get_transient('woo_envios_gmaps_failures');
-        return $failures >= self::MAX_CONSECUTIVE_FAILURES;
+    private function is_circuit_open(): bool {
+        $failures = get_transient('woo_envios_api_failures');
+        return $failures && $failures >= self::MAX_CONSECUTIVE_FAILURES;
     }
     
     private function record_failure(): void {
-        $failures = (int) get_transient('woo_envios_gmaps_failures');
+        $failures = get_transient('woo_envios_api_failures') ?: 0;
         $failures++;
-        set_transient('woo_envios_gmaps_failures', $failures, 300); // 5 minutes
+        set_transient('woo_envios_api_failures', $failures, 3600);
+        
+        if ($failures >= self::MAX_CONSECUTIVE_FAILURES) {
+            Woo_Envios_Logger::circuit_breaker_opened($failures);
+        }
     }
     
     private function record_success(): void {
-        delete_transient('woo_envios_gmaps_failures');
+        delete_transient('woo_envios_api_failures');
     }
 }
 ```
 
-### 5.4 Session Management Architecture
+#### Fallback Strategies:
+1. **Geocoding Fallback**
+   - Session cache → Database cache → API → Default coordinates
 
-**Coordinate Storage Strategy**:
-```php
-// Session data structure
-$session_data = [
-    'lat' => -23.550520,          // Latitude
-    'lng' => -46.633308,          // Longitude
-    'signature' => 'md5_hash',    // Address signature for validation
-    'timestamp' => 1678901234,    // Cache timestamp
-];
+2. **Distance Calculation Fallback**
+   - Distance Matrix API → Haversine formula
 
-// Signature generation
-$signature = md5(strtolower(implode('|', [
-    $city,
-    $state,
-    preg_replace('/\D/', '', $postcode),
-    $country
-])));
+3. **Shipping Method Fallback**
+   - Local delivery unavailable → Correios only
+
+### 6. **Data Flow Architecture**
+
+```mermaid
+flowchart TD
+    A[Customer Address Input] --> B[Address Normalization]
+    B --> C{Session Cache Check}
+    C -->|Hit| D[Use Cached Coordinates]
+    C -->|Miss| E{Database Cache Check}
+    E -->|Hit| F[Use DB Cached Coordinates]
+    E -->|Miss| G{Circuit Breaker Open?}
+    G -->|Yes| H[Use Default Coordinates]
+    G -->|No| I[Call Google Maps API]
+    I --> J{API Success?}
+    J -->|Yes| K[Cache Results<br/>Session + DB]
+    J -->|No| L[Record Failure<br/>Use Default]
+    K --> M[Calculate Distance]
+    L --> M
+    H --> M
+    D --> M
+    F --> M
+    
+    M --> N{Distance Tier Match?}
+    N -->|Yes| O[Calculate Base Price]
+    N -->|No| P[Show Correios Only]
+    
+    O --> Q[Apply Dynamic Multipliers]
+    Q --> R[Check Peak Hours]
+    Q --> S[Check Weekend]
+    Q --> T[Check Weather]
+    
+    R --> U[Calculate Final Price]
+    S --> U
+    T --> U
+    
+    U --> V[Add Flash Shipping Rate]
+    P --> W[Add Correios Rates]
+    V --> X[Combine & Sort Rates]
+    W --> X
+    
+    X --> Y[Display to Customer]
 ```
 
-## 6. Database Schema
+### 7. **Admin System Architecture**
 
-### 6.1 Core Tables
+**Settings Hierarchy:**
+```
+WooCommerce → Woo Envios
+├── General Settings
+│   ├── Store Coordinates
+│   ├── Distance Tiers
+│   └── Enable/Disable Features
+├── Google Maps
+│   ├── API Key Configuration
+│   ├── Cache Settings
+│   └── Circuit Breaker Status
+├── Dynamic Pricing
+│   ├── Peak Hours Configuration
+│   ├── Weather Integration
+│   └── Multiplier Limits
+└── Advanced
+    ├── Logging Settings
+    ├── Debug Mode
+    └── Cache Management
+```
 
-**Geocode Cache Table**:
+### 8. **Update System Architecture**
+
+**Dual Update Channels:**
+1. **GitHub-Based Updates** (Primary)
+   - Plugin Update Checker library
+   - Release asset management
+   - License key validation
+   - Branch-based releases
+
+2. **WordPress.org Style Updates** (Fallback)
+   - plugin-update.json manifest
+   - Traditional update API integration
+   - Manual update triggering
+
+**Update Flow:**
+```mermaid
+sequenceDiagram
+    participant Admin
+    participant Plugin
+    participant UpdateChecker
+    participant GitHub
+    participant LicenseAPI
+    
+    Admin->>Plugin: Check for updates
+    Plugin->>UpdateChecker: Get update info
+    UpdateChecker->>GitHub: Request release info
+    GitHub-->>UpdateChecker: Release data
+    UpdateChecker->>LicenseAPI: Validate license
+    LicenseAPI-->>UpdateChecker: License status
+    UpdateChecker-->>Plugin: Update available
+    Plugin-->>Admin: Show update notification
+    
+    Admin->>Plugin: Initiate update
+    Plugin->>GitHub: Download package
+    GitHub-->>Plugin: Release ZIP
+    Plugin->>Plugin: Install update
+    Plugin-->>Admin: Update complete
+```
+
+## Performance Considerations
+
+### 1. **Caching Strategy**
+- **Geocode Cache**: 30-day TTL with LRU-like expiration
+- **Weather Cache**: 1-hour TTL for real-time conditions
+- **Session Cache**: Per-session persistence
+- **Database Indexing**: Optimized for frequent lookups
+
+### 2. **API Optimization**
+- Batch geocoding where possible
+- Exponential backoff for retries
+- Concurrent request limiting
+- Response size minimization
+
+### 3. **Database Optimization**
 ```sql
-CREATE TABLE wp_woo_envios_geocode_cache (
-    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    cache_key VARCHAR(64) NOT NULL,
-    result_data LONGTEXT NOT NULL,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    expires_at DATETIME NOT NULL,
-    PRIMARY KEY (id),
-    UNIQUE KEY cache_key (cache_key),
-    KEY expires_at (expires
+-- Optimized queries for geocode cache
+SELECT result_data 
+FROM wp_woo_envios_geocode_cache 
+WHERE cache_key = %s 
+  AND expires_at > NOW() 
+LIMIT 1;
+
+-- Efficient cleanup
+DELETE FROM wp_woo_envios_geocode_cache 
+WHERE expires_at <= NOW() 
+LIMIT 1000; -- Batch deletion
+```
+
+## Security Architecture
+
+### 1. **API Key Management**
+- Secure storage in WordPress options
+- Format validation before use
+- No hardcoded keys in source
+- Regular key rotation support
+
+### 2. **Data Validation**
+- Input sanitization for all user data
+- Nonce verification for admin actions
+- Output escaping for display
+- SQL injection prevention via prepared statements
+
+### 3. **Session Security**
+- Signature-based session validation
+- Address normalization to prevent spoofing
+- Session fixation protection
+- Secure cookie handling
+
+## Scalability Considerations
+
+### 1. **Horizontal Scaling**
+- Stateless session management
+- Shared cache database
+- External API rate limiting
+- Load balancer compatibility
+
+### 2. **Vertical Scaling**
+- Database query optimization
+- Memory-efficient caching
+- Lazy loading of components
+- Background processing support
+
+### 3. **High Availability**
+- Circuit breaker pattern
+- Graceful degradation
+- Multiple fallback strategies
+- Health monitoring integration
+
+## Monitoring & Observability
+
+### 1. **Logging System**
+- Structured logging with context
+- Log rotation (7-day retention)
+- Admin notification for critical errors
+- Performance metrics collection
+
+### 2. **Health Checks**
+- API connectivity verification
+- Cache integrity checks
+- Database connection monitoring
+- Plugin dependency validation
+
+### 3. **Performance Metrics**
+- Geocoding response times
+- API success/failure rates
+- Cache hit ratios
+- Shipping calculation duration
+
+## Deployment Architecture
+
+### 1. **Environment Configuration**
+```php
+// Environment-specific constants
+define('WOO_ENVIOS_ENV', wp_get_environment_type());
+define('WOO_ENVIOS_DEBUG', WOO_ENVIOS_ENV === 'development');
+
+// Conditional logging
+if (WOO_ENVIOS_DEBUG) {
+    define('WOO_ENVIOS_LOG_LEVEL', 'debug');
+} else {
+    define('WOO_ENVIOS_LOG_LEVEL', 'error');
+}
+```
+
+### 2. **Build & Deployment**
+- Composer for PHP dependencies
+- GitHub Actions for CI/CD
+- Automated testing suite
+- Staging/production deployment pipelines
+
+### 3. **Rollback Strategy**
+- Database migration versioning
+- Plugin version compatibility checks
+- Zero-downtime deployment support
+- Automated rollback triggers
+
+## Integration Points
+
+### 1. **WooCommerce Integration**
+- Shipping method registration
+- Checkout field modifications
+- Cart/checkout hooks
+- Order meta data storage
+
+### 2. **External API Integration**
+- Google Maps API (Geocoding, Distance Matrix)
+- OpenWeather API (Weather conditions)
+- Correios API (National shipping)
+- SuperFrete API (Multi-carrier)
+- TriqHub License API (Update validation)
+
+### 3. **WordPress Integration**
+- Admin menu integration
+- Settings API utilization
+- Transients API for caching
+- Cron system
