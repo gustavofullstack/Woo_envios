@@ -2,7 +2,7 @@
 /**
  * Plugin Name: TriqHub: Shipping & Radius
  * Description: Automatiza a coleta de coordenadas no checkout (CEP brasileiro) para integrar regras de frete por raio no WooCommerce. Agora com Google Maps API para máxima precisão!
- * Version: 1.2.5
+ * Version: 1.2.6
  * Author: TriqHub
  * Requires at least: 6.2
  * Requires PHP: 7.4
@@ -35,7 +35,7 @@ final class Woo_Envios_Plugin {
 	/**
 	 * Plugin version.
 	 */
-	public const VERSION = '1.2.1';
+	public const VERSION = '1.2.6';
 
 	/**
 	 * Construtor privado.

@@ -5,9 +5,9 @@ on:
     branches:
       - main
     paths-ignore:
-      - 'docs/**'
-      - 'README.md'
-      - '.github/**'
+      - "docs/**"
+      - "README.md"
+      - ".github/**"
 
 permissions:
   contents: write
@@ -16,9 +16,7 @@ jobs:
   elite-release:
     runs-on: ubuntu-latest
     if: "!contains(github.event.head_commit.message, '[skip ci]')"
-    env:
-      DEEPSEEK_API_KEY: ${{ secrets['DEEPSEEK_API_KEY'] }} # Required: Add to Repo Secrets
-    
+
     steps:
       - name: 🚀 Checkout Code
         uses: actions/checkout@v4
@@ -28,12 +26,12 @@ jobs:
       - name: 🐘 Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.1'
+          php-version: "8.1"
 
       - name: 📦 Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
 
       - name: 🔢 Bump Version
         id: version
@@ -42,21 +40,23 @@ jobs:
           MAIN_FILE="triqhub-shipping-radius.php"
           CURRENT_VERSION=$(grep "Version:" $MAIN_FILE | head -n 1 | awk '{print $3}')
           echo "Current Version: $CURRENT_VERSION"
-          
+
           # Increment Patch
           IFS='.' read -r major minor patch <<< "$CURRENT_VERSION"
           NEW_VERSION="$major.$minor.$((patch + 1))"
           echo "New Version: $NEW_VERSION"
-          
+
           # Update Files
           sed -i "s/Version: $CURRENT_VERSION/Version: $NEW_VERSION/" $MAIN_FILE
           # Update class constant: public const VERSION = '...';
           sed -i "s/public const VERSION *= '.*';/public const VERSION = '$NEW_VERSION';/" $MAIN_FILE
-          
+
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
           echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
 
       - name: 🤖 Generate Elite Documentation (AI)
+        env:
+          DEEPSEEK_API_KEY: "${{ format('{0}', secrets.DEEPSEEK_API_KEY) }}"
         run: |
           npm install axios glob
           npx ts-node scripts/elite-docs-agent.ts
