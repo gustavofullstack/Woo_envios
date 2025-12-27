@@ -50,7 +50,7 @@ if ( ! class_exists( 'TriqHub_Connector' ) ) {
                     'triqhub',
                     array( $this, 'render_dashboard_page' ),
                     'dashicons-cloud',
-                    '0.5'
+                    1
                 );
             }
 
