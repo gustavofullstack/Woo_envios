@@ -12,9 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Prevent duplicate class declaration
-if ( class_exists( __NAMESPACE__ . '\Geocoder' ) ) {
-	return;
-}
+if ( ! class_exists( 'Woo_Envios\Services\Geocoder' ) ) :
 
 /**
  * Class Geocoder - Now powered by Google Maps API
@@ -111,3 +109,4 @@ class Geocoder {
 		return $result;
 	}
 }
+endif;

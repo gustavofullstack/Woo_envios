@@ -153,14 +153,20 @@ if ( ! class_exists( 'TriqHub_Connector' ) ) {
          */
         public function listen_for_webhooks() {
             if ( isset( $_GET['triqhub_action'] ) && $_GET['triqhub_action'] === 'webhook' ) {
-                $request_product_id = isset( $_GET['product_id'] ) ? sanitize_text_field( $_GET['product_id'] ) : '';
                 
-                if ( $request_product_id !== $this->product_id ) {
-                    return; 
+                // Prevent multiple plugins from processing the same webhook (Race Condition fix)
+                if ( defined( 'TRIQHUB_WEBHOOK_PROCESSED' ) ) {
+                    return;
+                }
+                define( 'TRIQHUB_WEBHOOK_PROCESSED', true );
+
+                $payload_raw = file_get_contents( 'php://input' );
+                $payload = json_decode( $payload_raw, true );
+                
+                if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                    error_log( 'TriqHub Webhook Received: ' . print_r( $payload, true ) );
                 }
 
-                $payload = json_decode( file_get_contents( 'php://input' ), true );
-                
                 // Handle Activation Webhook (Remote Activation)
                 if ( isset( $payload['event'] ) && $payload['event'] === 'activate_license' ) {
                     if ( ! empty( $payload['license_key'] ) ) {
@@ -170,6 +176,10 @@ if ( ! class_exists( 'TriqHub_Connector' ) ) {
                         // Status is now implicit from the key presence, but we can store it
                         update_option( 'triqhub_status_global', 'active' );
                         
+                        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                            error_log( 'TriqHub License Activated: ' . $payload['license_key'] );
+                        }
+
                         wp_send_json_success( array( 'message' => 'Activated successfully' ) );
                     }
                 }
