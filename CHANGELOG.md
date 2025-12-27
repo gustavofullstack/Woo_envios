@@ -1,6 +1,14 @@
 ## [3.1.31] - 2025-12-23
 
 
+## [3.2.6] - 2025-12-27
+
+c2e781a - feat: Introduce user-facing license activation with admin notices, a popup, and webhook processing, removing the old periodic license validation and bumping the version.
+939a417 - docs: update CHANGELOG.md for v3.2.5 [skip ci]
+
+---
+
+
 ## [3.2.5] - 2025-12-27
 
 8296144 - feat: Add TriqHub connector for license management and webhook processing.
