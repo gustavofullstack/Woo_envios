@@ -22,6 +22,7 @@ if ( ! class_exists( 'TriqHub_Connector' ) ) {
             // Check Activation Status
             add_action( 'admin_init', array( $this, 'check_license_status' ) );
             add_action( 'admin_init', array( $this, 'handle_dashboard_actions' ) );
+            add_action( 'admin_init', array( $this, 'handle_plugin_management' ) );
             add_action( 'admin_notices', array( $this, 'activation_notice' ) );
             add_action( 'admin_menu', array( $this, 'register_admin_menu' ), 9 ); // Priority 9 to be early
 
@@ -194,6 +195,10 @@ if ( ! class_exists( 'TriqHub_Connector' ) ) {
                     <div class="notice notice-info is-dismissible"><p>Cache de atualizações limpo.</p></div>
                 <?php endif; ?>
 
+                <?php if (isset($_GET['installed'])): ?>
+                    <div class="notice notice-success is-dismissible"><p>Plugin <strong><?php echo esc_html($_GET['repo']); ?></strong> instalado e atualizado com sucesso!</p></div>
+                <?php endif; ?>
+
                 <!-- License Status Card -->
                 <div style="background: white; padding: 25px; margin-bottom: 30px; border-radius: 12px; border-left: 6px solid <?php echo $is_connected ? '#10b981' : '#f59e0b'; ?>; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
                     <div style="display: flex; align-items: center; justify-content: space-between;">
@@ -267,11 +272,17 @@ if ( ! class_exists( 'TriqHub_Connector' ) ) {
                                 </div>
                                 <div>
                                     <?php if ($status === 'active'): ?>
-                                        <span class="dashicons dashicons-yes" style="color: #10b981;"></span>
+                                        <div style="display: flex; gap: 5px;">
+                                             <span class="dashicons dashicons-yes" style="color: #10b981;"></span>
+                                             <a href="<?php echo add_query_arg(array('triqhub_action' => 'install_internal', 'repo' => $def['repo'], '_wpnonce' => $action_nonce)); ?>" class="button button-small" style="font-size: 10px; height: 24px; line-height: 22px;" title="Forçar Atualização"> Atualizar</a>
+                                        </div>
                                     <?php elseif ($status === 'inactive'): ?>
-                                        <a href="<?php echo add_query_arg(array('triqhub_action' => 'activate', 'plugin_file' => $plugin_file, '_wpnonce' => $action_nonce)); ?>" class="button button-small">Ativar</a>
+                                        <div style="display: flex; gap: 5px;">
+                                            <a href="<?php echo add_query_arg(array('triqhub_action' => 'activate', 'plugin_file' => $plugin_file, '_wpnonce' => $action_nonce)); ?>" class="button button-small">Ativar</a>
+                                            <a href="<?php echo add_query_arg(array('triqhub_action' => 'install_internal', 'repo' => $def['repo'], '_wpnonce' => $action_nonce)); ?>" class="button button-small" style="font-size: 10px; height: 24px; line-height: 22px;">Update</a>
+                                        </div>
                                     <?php else: ?>
-                                        <a href="https://github.com/gustavofullstack/<?php echo $def['repo']; ?>/releases/latest" target="_blank" class="button button-small button-primary" style="background: <?php echo $def['color']; ?>; border: none;">Instalar</a>
+                                        <a href="<?php echo add_query_arg(array('triqhub_action' => 'install_internal', 'repo' => $def['repo'], '_wpnonce' => $action_nonce)); ?>" class="button button-small button-primary" style="background: <?php echo $def['color']; ?>; border: none;">Instalar Agora</a>
                                     <?php endif; ?>
                                 </div>
                             </div>
@@ -499,6 +510,77 @@ if ( ! class_exists( 'TriqHub_Connector' ) ) {
                 </div>
             </div>
             <?php
+        }
+
+        /**
+         * Handle Internal Plugin Management Actions
+         */
+        public function handle_plugin_management() {
+            if ( ! isset( $_GET['page'] ) || $_GET['page'] !== 'triqhub' ) {
+                return;
+            }
+
+            if ( ! current_user_can( 'install_plugins' ) ) {
+                return;
+            }
+
+            if ( isset( $_GET['triqhub_action'] ) && isset( $_GET['_wpnonce'] ) ) {
+                if ( ! wp_verify_nonce( $_GET['_wpnonce'], 'triqhub_dashboard_action' ) ) {
+                    return;
+                }
+
+                $action = sanitize_text_field( $_GET['triqhub_action'] );
+                
+                if ( $action === 'install_internal' && isset( $_GET['repo'] ) ) {
+                    $repo = sanitize_text_field( $_GET['repo'] );
+                    $this->internal_install_plugin( $repo );
+                }
+            }
+        }
+
+        /**
+         * Core logic to download and install/update plugin from GitHub
+         */
+        private function internal_install_plugin( $repo ) {
+            require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
+            require_once ABSPATH . 'wp-admin/includes/plugin-install.php';
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+            require_once ABSPATH . 'wp-admin/includes/misc.php';
+
+            // We use the main branch zip. For production quality, we could hit the GitHub API for releases
+            $zip_url = "https://github.com/gustavofullstack/{$repo}/archive/refs/heads/main.zip";
+            
+            // Connect to filesystem
+            $url = admin_url( 'admin.php?page=triqhub' );
+            if ( false === ( $creds = request_filesystem_credentials( $url, '', false, false, null ) ) ) {
+                return;
+            }
+
+            if ( ! WP_Filesystem( $creds ) ) {
+                request_filesystem_credentials( $url, '', true, false, null );
+                return;
+            }
+
+            // Custom Skin to suppress header/footer output during process
+            $skin = new Automatic_Upgrader_Skin();
+            $upgrader = new Plugin_Upgrader( $skin );
+            
+            // If plugin already exists, it will overwrite it because of how HEAD zips work or we can force it
+            $result = $upgrader->install( $zip_url );
+            
+            if ( is_wp_error( $result ) ) {
+                wp_die( 'Erro na instalação: ' . $result->get_error_message() );
+            }
+
+            // After installation, we need to find the new plugin file and activate it
+            // Typically the folder is {repo}-main
+            $installed_plugins = $this->get_installed_triqhub_plugins();
+            if ( isset( $installed_plugins[$repo] ) ) {
+                activate_plugin( $installed_plugins[$repo]['file'] );
+            }
+
+            wp_redirect( add_query_arg( array( 'installed' => 'true', 'repo' => $repo ), admin_url( 'admin.php?page=triqhub' ) ) );
+            exit;
         }
 
         /**
