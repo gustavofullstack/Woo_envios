@@ -1,6 +1,14 @@
 ## [3.1.31] - 2025-12-23
 
 
+## [3.2.7] - 2025-12-27
+
+f143758 - feat: Introduce TriqHub admin styling and update plugin name.
+55d3b17 - docs: update CHANGELOG.md for v3.2.6 [skip ci]
+
+---
+
+
 ## [3.2.6] - 2025-12-27
 
 c2e781a - feat: Introduce user-facing license activation with admin notices, a popup, and webhook processing, removing the old periodic license validation and bumping the version.
