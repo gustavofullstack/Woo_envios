@@ -1,8 +1,8 @@
-# Connectivity Documentation: TriqHub Shipping & Radius Plugin
+# TriqHub Shipping & Radius - Connectivity Documentation
 
 ## Overview
 
-The TriqHub Shipping & Radius plugin implements a sophisticated multi-service architecture that integrates with several external APIs to provide Brazilian-focused shipping solutions with dynamic pricing, geolocation services, and automated updates.
+The TriqHub Shipping & Radius plugin implements a sophisticated multi-layered connectivity architecture that integrates with external APIs, WordPress/WooCommerce core systems, and internal services. This document details all external integrations, network communication patterns, error handling strategies, and webhook structures.
 
 ## External API Integrations
 
@@ -10,65 +10,55 @@ The TriqHub Shipping & Radius plugin implements a sophisticated multi-service ar
 
 #### Configuration
 - **API Key Storage**: `woo_envios_google_maps_api_key` WordPress option
-- **Validation**: Format validation (39 chars, starts with 'AIza')
-- **Cache TTL**: Configurable via `udi_google_maps_cache_ttl` (default: 30 days)
+- **Required APIs**: Geocoding, Places Autocomplete, Distance Matrix
+- **Rate Limits**: 40,000 requests per month (free tier), 100 requests per second
 
-#### Services Used
-```mermaid
-graph LR
-    A[Plugin] --> B[Geocoding API]
-    A --> C[Places API]
-    A --> D[Distance Matrix API]
-    A --> E[Place Details API]
-    
-    B --> F[Address → Coordinates]
-    C --> G[Autocomplete Suggestions]
-    D --> H[Route Distance Calculation]
-    E --> I[Address Validation]
+#### Endpoints Used
+
+```php
+protected $api_urls = array(
+    'geocode' => 'https://maps.googleapis.com/maps/api/geocode/json',
+    'places' => 'https://maps.googleapis.com/maps/api/place/autocomplete/json',
+    'place_details' => 'https://maps.googleapis.com/maps/api/place/details/json',
+    'distance' => 'https://maps.googleapis.com/maps/api/distancematrix/json',
+);
 ```
-
-#### API Endpoints
-| Service | Endpoint | Purpose |
-|---------|----------|---------|
-| Geocoding | `https://maps.googleapis.com/maps/api/geocode/json` | Convert addresses to coordinates |
-| Places Autocomplete | `https://maps.googleapis.com/maps/api/place/autocomplete/json` | Address suggestions |
-| Place Details | `https://maps.googleapis.com/maps/api/place/details/json` | Validate selected addresses |
-| Distance Matrix | `https://maps.googleapis.com/maps/api/distancematrix/json` | Calculate shipping distances |
 
 #### Request Parameters
+
+**Geocoding API:**
 ```php
-// Geocoding Request
 $params = array(
     'address' => $address,
-    'key' => $api_key,
-    'region' => 'br',
-    'language' => 'pt-BR'
-);
-
-// Distance Matrix Request
-$params = array(
-    'origins' => $origin_coords,
-    'destinations' => $destination_coords,
-    'key' => $api_key,
-    'mode' => 'driving',
+    'key' => $this->api_key,
+    'region' => 'br', // Brazil-specific
     'language' => 'pt-BR',
-    'units' => 'metric'
 );
 ```
+
+**Distance Matrix API:**
+```php
+$params = array(
+    'origins' => $origin,
+    'destinations' => $destination,
+    'key' => $this->api_key,
+    'mode' => 'driving',
+    'language' => 'pt-BR',
+    'units' => 'metric',
+);
+```
+
+#### Caching Strategy
+- **Cache Table**: `wp_woo_envios_geocode_cache`
+- **TTL**: Configurable via `udi_google_maps_cache_ttl` (default: 30 days)
+- **Cache Key Structure**: `md5($address . '|' . $api_key)`
 
 ### 2. OpenWeather API Integration
 
 #### Configuration
 - **API Key Storage**: `woo_envios_weather_api_key` WordPress option
-- **Cache Duration**: 1 hour (3600 seconds)
 - **Endpoint**: `https://api.openweathermap.org/data/2.5/weather`
-
-#### Weather-Based Pricing Multipliers
-| Condition | Multiplier Option | Default |
-|-----------|------------------|---------|
-| Light Rain | `woo_envios_rain_light_multiplier` | 1.2x |
-| Heavy Rain | `woo_envios_rain_heavy_multiplier` | 1.5x |
-| Thunderstorm | Uses heavy rain multiplier | 1.5x |
+- **Cache Duration**: 1 hour (3600 seconds)
 
 #### Request Parameters
 ```php
@@ -77,38 +67,33 @@ $params = array(
     'lon' => $longitude,
     'appid' => $api_key,
     'units' => 'metric',
-    'lang' => 'pt_br'
+    'lang' => 'pt_br',
 );
 ```
 
-### 3. TriqHub License API Integration
-
-#### Configuration
-- **Connector Class**: `TriqHub_Connector` (invisible integration)
-- **License Key**: `triqhub_license_key` WordPress option
-- **Site URL**: Automatically included in requests
-
-#### Update Integration Flow
-```mermaid
-sequenceDiagram
-    participant P as Plugin
-    participant U as Update Checker
-    participant T as TriqHub API
-    participant G as GitHub
+#### Weather Multiplier Logic
+```php
+// Rain intensity detection
+if ('rain' === $condition || 'drizzle' === $condition) {
+    $rain_1h = $weather_data['rain']['1h'] ?? 0;
     
-    P->>U: Initialize Update Checker
-    U->>T: Check for updates (with license)
-    T->>G: Validate license + Get repo info
-    G-->>T: Repository metadata
-    T-->>U: Update info + validation
-    U-->>P: Available updates
-    
-    Note over P,T: License key and site URL<br/>injected via filter
+    if ($rain_1h > 5) {
+        return (float) get_option('woo_envios_rain_heavy_multiplier', 1.5);
+    }
+    return (float) get_option('woo_envios_rain_light_multiplier', 1.2);
+}
 ```
 
-#### License Validation Filter
+### 3. TriqHub License API
+
+#### Integration Points
+- **License Validation**: During plugin activation and update checks
+- **Update Authentication**: License key injected into GitHub update requests
+- **Telemetry**: Anonymous usage statistics (optional)
+
+#### License Key Flow
 ```php
-add_filter('puc_request_info_query_args-triqhub-shipping-radius', function($queryArgs) {
+add_filter('puc_request_info_query_args-' . $myUpdateChecker->slug, function ($queryArgs) {
     $license_key = get_option('triqhub_license_key');
     if (!empty($license_key)) {
         $queryArgs['license_key'] = $license_key;
@@ -118,440 +103,454 @@ add_filter('puc_request_info_query_args-triqhub-shipping-radius', function($quer
 });
 ```
 
-### 4. WooCommerce Native Integration
+### 4. Correios/SuperFrete API
 
-#### Shipping Method Registration
+#### Service Integration
+- **Primary Class**: `Woo_Envios\Services\Woo_Envios_Correios`
+- **Shipping Methods**: PAC, SEDEX, Mini Envios
+- **Fallback Strategy**: Used when customers are outside local delivery radius
+
+#### Calculation Flow
 ```php
-add_filter('woocommerce_shipping_methods', function($methods) {
+public function calculate($package) {
+    // 1. Validate package dimensions and weight
+    // 2. Build API request to Correios/SuperFrete
+    // 3. Parse response and format shipping rates
+    // 4. Apply business rules and filters
+}
+```
+
+## WooCommerce Native Integration
+
+### 1. Shipping Method Registration
+
+```php
+public function register_shipping_method(array $methods): array {
     $methods['woo_envios_radius'] = 'Woo_Envios_Shipping_Method';
     $methods['woo_envios_superfrete'] = 'Woo_Envios\Services\Woo_Envios_Superfrete_Shipping_Method';
     return $methods;
-});
+}
 ```
 
-#### Session Data Structure
+### 2. Session Management
+
+**Coordinate Storage:**
 ```php
 WC()->session->set('woo_envios_coords', array(
     'lat' => $latitude,
     'lng' => $longitude,
-    'signature' => md5($normalized_address)
+    'signature' => $signature, // MD5 hash of address components
 ));
 ```
 
-### 5. Correios/SuperFrete API Integration
-
-#### Service Configuration
-- **Class**: `Woo_Envios\Services\Woo_Envios_Correios`
-- **Activation**: Conditional based on store configuration
-- **Fallback**: Used when local delivery is unavailable
-
-#### Shipping Calculation Flow
+**Session Signature:**
 ```php
-class Woo_Envios_Correios {
-    public function calculate(array $package): ?array {
-        // 1. Validate package dimensions
-        // 2. Prepare API request
-        // 3. Call Correios API
-        // 4. Parse response
-        // 5. Return rates array
-    }
+private function build_destination_signature(array $package): string {
+    $destination = $package['destination'] ?? array();
+    $postcode = preg_replace('/\D/', '', $destination['postcode'] ?? '');
+    
+    $parts = array(
+        sanitize_text_field($destination['city'] ?? ''),
+        sanitize_text_field($destination['state'] ?? ''),
+        $postcode,
+        sanitize_text_field($destination['country'] ?? ''),
+    );
+    
+    return md5(strtolower(implode('|', $parts)));
 }
 ```
 
-## Webhook Structures
+### 3. Checkout Integration
 
-### 1. Update Webhooks
+**JavaScript Events:**
+- `woo_envios_address_changed`: Triggered when address fields change
+- `woo_envios_geocode_complete`: Fired after successful geocoding
+- `woo_envios_shipping_updated`: When shipping rates are recalculated
 
-#### GitHub Webhook Payload
-```json
-{
-    "action": "published",
-    "release": {
-        "tag_name": "v1.2.14",
-        "name": "Release 1.2.14",
-        "body": "Release notes...",
-        "prerelease": false,
-        "published_at": "2024-01-15T10:00:00Z"
-    },
-    "repository": {
-        "full_name": "gustavofullstack/triqhub-shipping-radius"
-    }
-}
-```
-
-### 2. License Validation Webhook
-
-#### Request Structure
-```json
-{
-    "license_key": "TRQ-XXXX-XXXX-XXXX",
-    "site_url": "https://example.com",
-    "plugin_version": "1.2.14",
-    "woocommerce_version": "8.0.0",
-    "timestamp": "2024-01-15T10:00:00Z"
-}
-```
-
-#### Response Structure
-```json
-{
-    "valid": true,
-    "expires_at": "2024-12-31T23:59:59Z",
-    "update_available": true,
-    "latest_version": "1.2.15",
-    "download_url": "https://github.com/.../triqhub-shipping-radius.zip"
-}
-```
+**AJAX Endpoints:**
+- `admin-ajax.php?action=woo_envios_geocode`
+- `admin-ajax.php?action=woo_envios_validate_address`
 
 ## Network Configuration
 
 ### Timeout Settings
 
-| Service | Timeout | Retry Attempts | Circuit Breaker |
-|---------|---------|----------------|-----------------|
-| Google Maps API | 10 seconds | 3 | 5 consecutive failures |
-| OpenWeather API | 5 seconds | 2 | Not implemented |
-| Correios API | 15 seconds | 2 | Not implemented |
-| GitHub API | 30 seconds | 3 | Not implemented |
+```php
+// Google Maps API
+const REQUEST_TIMEOUT = 10; // seconds
 
-### Circuit Breaker Implementation
+// OpenWeather API
+$response = wp_remote_get($url, array(
+    'timeout' => 5,
+));
+
+// GitHub Update Checker
+$myUpdateChecker = \YahnisElsts\PluginUpdateChecker\v5\PucFactory::buildUpdateChecker(
+    'https://github.com/gustavofullstack/triqhub-shipping-radius',
+    __FILE__,
+    'triqhub-shipping-radius'
+);
+```
+
+### Retry Logic
 
 ```php
-class Woo_Envios_Google_Maps {
-    private const MAX_CONSECUTIVE_FAILURES = 5;
+private const MAX_RETRIES = 3;
+
+private function make_api_request_with_retry($url, $params) {
+    $attempts = 0;
     
-    private function track_api_failure(): void {
-        $failures = (int) get_transient('woo_envios_google_maps_failures');
-        $failures++;
+    while ($attempts < self::MAX_RETRIES) {
+        $response = wp_remote_get($url, array(
+            'timeout' => self::REQUEST_TIMEOUT,
+            'body' => $params,
+        ));
         
-        if ($failures >= self::MAX_CONSECUTIVE_FAILURES) {
-            set_transient('woo_envios_google_maps_disabled', true, 300); // 5 minutes
-            Woo_Envios_Logger::circuit_breaker_opened($failures);
+        if (!is_wp_error($response)) {
+            return $response;
         }
         
-        set_transient('woo_envios_google_maps_failures', $failures, 300);
+        $attempts++;
+        sleep(1 * $attempts); // Exponential backoff
     }
     
-    private function reset_failure_count(): void {
-        delete_transient('woo_envios_google_maps_failures');
-        delete_transient('woo_envios_google_maps_disabled');
-    }
+    return false;
 }
-```
-
-### Cache Strategies
-
-#### 1. Database Cache (Geocode Results)
-```sql
-CREATE TABLE wp_woo_envios_geocode_cache (
-    id BIGINT UNSIGNED AUTO_INCREMENT,
-    cache_key VARCHAR(64) NOT NULL,
-    result_data LONGTEXT NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    expires_at DATETIME NOT NULL,
-    PRIMARY KEY (id),
-    UNIQUE KEY cache_key (cache_key),
-    KEY expires_at (expires_at)
-);
-```
-
-#### 2. Transient Cache (Weather Data)
-```php
-// 1-hour cache for weather data
-set_transient(
-    'woo_envios_weather_' . md5($lat . '|' . $lng),
-    $weather_data,
-    3600
-);
-```
-
-#### 3. Session Cache (Customer Coordinates)
-```php
-// Stored in WooCommerce session
-WC()->session->set('woo_envios_coords', array(
-    'lat' => $lat,
-    'lng' => $lng,
-    'signature' => $signature
-));
 ```
 
 ## Error Handling Strategies
 
-### 1. Graceful Degradation
+### 1. Circuit Breaker Pattern
 
-```mermaid
-graph TD
-    A[Calculate Shipping] --> B{Google Maps Available?}
-    B -->|Yes| C[Use Distance Matrix API]
-    B -->|No| D[Use Haversine Formula]
+**Implementation:**
+```php
+private const MAX_CONSECUTIVE_FAILURES = 5;
+
+private function check_circuit_breaker() {
+    $failures = (int) get_transient('woo_envios_api_failures');
     
-    C --> E{API Response Valid?}
-    E -->|Yes| F[Return Route Distance]
-    E -->|No| G[Fallback to Haversine]
+    if ($failures >= self::MAX_CONSECUTIVE_FAILURES) {
+        // Circuit is open - use fallback
+        $this->use_fallback_coordinates();
+        Woo_Envios_Logger::circuit_breaker_opened($failures);
+        return false;
+    }
     
-    D --> H[Calculate Straight-line Distance]
+    return true;
+}
+
+private function record_api_failure() {
+    $failures = (int) get_transient('woo_envios_api_failures');
+    $failures++;
+    set_transient('woo_envios_api_failures', $failures, 300); // 5 minutes
     
-    F --> I[Apply Dynamic Pricing]
-    G --> I
-    H --> I
+    if ($failures >= self::MAX_CONSECUTIVE_FAILURES) {
+        set_transient('woo_envios_circuit_open', true, 900); // 15 minutes
+    }
+}
+
+private function record_api_success() {
+    // Reset failure counter on successful call
+    delete_transient('woo_envios_api_failures');
+    delete_transient('woo_envios_circuit_open');
+}
 ```
 
 ### 2. Fallback Mechanisms
 
-#### Geocoding Fallback
+**Geocoding Fallback:**
+1. Google Maps API (primary)
+2. Session cache (secondary)
+3. Server-side geocoding (tertiary)
+4. Default coordinates (final)
+
 ```php
-private function get_session_coordinates(string $signature): ?array {
-    // 1. Check session cache
-    $coords = WC()->session->get('woo_envios_coords');
+if (empty($session_coords)) {
+    // Server-side fallback geocoding
+    $fallback_coords = \Woo_Envios\Services\Geocoder::geocode($full_address);
     
-    if (empty($coords)) {
-        // 2. Server-side geocoding fallback
-        $fallback_coords = \Woo_Envios\Services\Geocoder::geocode($address);
-        
-        if ($fallback_coords) {
-            // 3. Save to session for future requests
-            WC()->session->set('woo_envios_coords', array(
-                'lat' => $fallback_coords['lat'],
-                'lng' => $fallback_coords['lng'],
-                'signature' => $signature
-            ));
-            return $fallback_coords;
-        }
-        
-        // 4. Final fallback: Use Correios only
+    if ($fallback_coords) {
+        $session_coords = $fallback_coords;
+        WC()->session->set('woo_envios_coords', $session_coords);
+    } else {
+        // Use Correios as fallback
         $this->calculate_correios_shipping($package);
-        return null;
-    }
-    
-    return $coords;
-}
-```
-
-### 3. Error Logging System
-
-#### Log File Structure
-```
-/upload/woo-envios-logs/
-├── YYYY-MM-DD.log
-├── .htaccess (Deny from all)
-└── (Auto-cleanup after 7 days)
-```
-
-#### Log Levels and Context
-```php
-class Woo_Envios_Logger {
-    public static function shipping_calculated(
-        float $distance,
-        float $base_price,
-        float $final_price,
-        array $multipliers,
-        string $address = '',
-        array $store_coords = array(),
-        array $customer_coords = array()
-    ): void {
-        // Structured logging with context
-    }
-    
-    public static function circuit_breaker_opened(int $failures): void {
-        // Log + admin notification
-    }
-    
-    public static function distance_out_of_range(
-        float $distance,
-        array $destination_data
-    ): void {
-        // Warning for business intelligence
-    }
-}
-```
-
-### 4. Admin Notifications
-
-#### Email Alert System
-```php
-private static function notify_admin_api_failure(int $failures): void {
-    // Rate limiting: 1 notification per hour
-    $last_notification = get_transient('woo_envios_last_failure_notification');
-    if (false !== $last_notification) {
         return;
     }
-    
-    $admin_email = get_option('admin_email');
-    $subject = 'Woo Envios: Falhas na API do Google Maps';
-    $message = sprintf(...);
-    
-    wp_mail($admin_email, $subject, $message);
-    set_transient('woo_envios_last_failure_notification', time(), 3600);
 }
 ```
 
-#### WordPress Admin Notices
+**Distance Calculation Fallback:**
+1. Google Distance Matrix API (primary)
+2. Haversine formula (fallback)
+
 ```php
-add_action('admin_notices', function() {
-    if (!class_exists('WooCommerce')) {
-        echo '<div class="error"><p>';
-        echo esc_html__('Woo Envios requer o WooCommerce para funcionar.', 'woo-envios');
-        echo '</p></div>';
-    }
+$distance_data = $this->calculate_route_distance($store_coords, $session_coords, $package);
+
+if (is_wp_error($distance_data) || empty($distance_data)) {
+    // Fallback to Haversine formula
+    $distance = $this->calculate_distance(
+        (float) $store_coords['lat'],
+        (float) $store_coords['lng'],
+        (float) $session_coords['lat'],
+        (float) $session_coords['lng']
+    );
+} else {
+    $distance = round($distance_data['distance_value'] / 1000, 2);
+}
+```
+
+### 3. Graceful Degradation
+
+**Shipping Calculation Flow:**
+```mermaid
+graph TD
+    A[Checkout Initiated] --> B{Google Maps API Available?}
+    B -->|Yes| C[Use Real-time Distance Matrix]
+    B -->|No| D{Session Coordinates Available?}
+    D -->|Yes| E[Use Haversine Formula]
+    D -->|No| F{Server-side Geocoding Available?}
+    F -->|Yes| G[Geocode Address Server-side]
+    F -->|No| H[Show Correios Only]
+    C --> I[Calculate Dynamic Pricing]
+    E --> I
+    G --> I
+    I --> J[Display Shipping Options]
+    H --> K[Display National Shipping Only]
+```
+
+## Webhook Structures
+
+### 1. Update Notification Webhooks
+
+**GitHub Webhook Payload:**
+```json
+{
+  "action": "released",
+  "release": {
+    "tag_name": "v1.2.15",
+    "name": "Enhanced Google Maps Integration",
+    "body": "Added circuit breaker pattern and improved error handling",
+    "prerelease": false,
+    "published_at": "2024-01-15T10:00:00Z"
+  },
+  "repository": {
+    "full_name": "gustavofullstack/triqhub-shipping-radius",
+    "html_url": "https://github.com/gustavofullstack/triqhub-shipping-radius"
+  }
+}
+```
+
+### 2. License Validation Webhook
+
+**Request Structure:**
+```json
+{
+  "license_key": "TRQ-XXXX-XXXX-XXXX",
+  "site_url": "https://example.com",
+  "plugin_version": "1.2.15",
+  "action": "validate_license"
+}
+```
+
+**Response Structure:**
+```json
+{
+  "valid": true,
+  "expires_at": "2024-12-31T23:59:59Z",
+  "features": ["radius_shipping", "weather_pricing", "dynamic_multipliers"],
+  "update_available": false
+}
+```
+
+## Security Considerations
+
+### 1. API Key Protection
+
+- **Storage**: Encrypted in WordPress database
+- **Transmission**: HTTPS only
+- **Validation**: Format validation before use
+- **Rotation**: Manual rotation via admin panel
+
+### 2. Input Sanitization
+
+```php
+// Address sanitization
+$sanitized_address = array_map('sanitize_text_field', [
+    $address_1,
+    $address_2,
+    $city,
+    $state,
+    $postcode,
+    $country
+]);
+
+// Coordinate validation
+if (!is_numeric($lat) || !is_numeric($lng)) {
+    throw new InvalidArgumentException('Invalid coordinates provided');
+}
+
+if ($lat < -90 || $lat > 90 || $lng < -180 || $lng > 180) {
+    throw new InvalidArgumentException('Coordinates out of valid range');
+}
+```
+
+### 3. Nonce Verification
+
+```php
+// AJAX request validation
+add_action('wp_ajax_woo_envios_geocode', function() {
+    check_ajax_referer('woo_envios_geocode_nonce', 'security');
+    
+    // Process request
+    wp_send_json_success($result);
 });
 ```
 
-## Complete Integration Flow Diagram
+## Monitoring and Logging
+
+### 1. Log Structure
+
+**File-based Logging:**
+- Location: `/wp-content/uploads/woo-envios-logs/`
+- Format: `[YYYY-MM-DD HH:MM:SS] [LEVEL] Message`
+- Retention: 7 days automatic cleanup
+
+**Log Levels:**
+- `INFO`: Normal operations, shipping calculations
+- `WARNING`: API rate limits, fallback activations
+- `ERROR`: API failures, configuration issues
+- `DEBUG`: Detailed calculation steps (when enabled)
+
+### 2. Performance Metrics
+
+**Tracked Metrics:**
+- API response times
+- Cache hit rates
+- Circuit breaker state
+- Shipping calculation duration
+- Memory usage during peak operations
+
+### 3. Alerting System
+
+**Email Notifications:**
+- Circuit breaker activation
+- API key expiration warnings
+- Consecutive failure thresholds
+- Update availability
+
+## Integration Sequence Diagram
 
 ```mermaid
 sequenceDiagram
     participant C as Customer
     participant WC as WooCommerce
     participant P as Plugin
-    participant GM as Google Maps
-    participant OW as OpenWeather
-    participant CF as Correios
-    participant TH as TriqHub
-    participant GH as GitHub
-
-    C->>WC: Enters Checkout
-    WC->>P: calculate_shipping()
+    participant GM as Google Maps API
+    participant OW as OpenWeather API
+    participant CF as Correios API
+    participant S as Session
     
-    P->>P: Get store coordinates
-    P->>P: Check session cache
+    C->>WC: Enters Checkout Address
+    WC->>P: Trigger Address Change
+    P->>GM: Geocode Address (Async)
+    GM-->>P: Return Coordinates
+    P->>S: Store Coordinates in Session
     
-    alt Coordinates in cache
-        P->>P: Use cached coordinates
-    else No cache
-        P->>GM: Geocode address
-        GM-->>P: Return coordinates
-        P->>P: Cache in session
+    Note over P,GM: Distance Calculation
+    P->>GM: Calculate Route Distance
+    GM-->>P: Return Distance Matrix
+    
+    Note over P,OW: Weather Check
+    P->>OW: Get Weather Conditions
+    OW-->>P: Return Rain Data
+    
+    Note over P,CF: Fallback Preparation
+    P->>CF: Pre-calculate Correios Rates
+    
+    alt Within Delivery Radius
+        P->>P: Calculate Dynamic Pricing
+        P->>P: Apply Multipliers
+        P->>WC: Return Flash + Correios Rates
+    else Outside Delivery Radius
+        P->>WC: Return Correios Rates Only
     end
     
-    P->>GM: Distance Matrix API
-    GM-->>P: Route distance
-    
-    P->>OW: Weather API
-    OW-->>P: Rain conditions
-    
-    P->>P: Calculate dynamic pricing
-    P->>P: Match distance tier
-    
-    alt Within delivery radius
-        P->>WC: Add Flash delivery rate
-    else Outside radius
-        P->>CF: Calculate Correios rates
-        CF-->>P: Return shipping options
-        P->>WC: Add Correios rates only
-    end
-    
-    WC->>C: Display shipping options
-    
-    Note over P,TH: Background processes
-    P->>TH: License validation (periodic)
-    TH-->>P: License status
-    
-    P->>GH: Check for updates
-    GH-->>P: Update availability
-    
-    P->>TH: Report usage statistics
-    TH-->>P: Acknowledge
+    WC->>C: Display Shipping Options
 ```
 
-## Security Considerations
-
-### 1. API Key Protection
-- API keys stored in WordPress options (encrypted at rest if supported)
-- Never exposed in client-side code
-- Format validation before use
-
-### 2. Input Sanitization
-```php
-// Address normalization for signature
-$postcode = preg_replace('/\D/', '', $destination['postcode'] ?? '');
-$normalized = strtolower(implode('|', array_filter([
-    sanitize_text_field($destination['city'] ?? ''),
-    sanitize_text_field($destination['state'] ?? ''),
-    $postcode,
-    sanitize_text_field($destination['country'] ?? '')
-])));
-```
-
-### 3. Rate Limiting
-- Circuit breaker pattern for Google Maps API
-- Session-based caching to reduce API calls
-- Transient-based notification cooldown
-
-### 4. Data Privacy
-- Customer coordinates stored only in session (ephemeral)
-- Log files protected by .htaccess
-- No PII in external API calls beyond necessary address data
-
-## Monitoring and Maintenance
-
-### 1. Health Checks
-```php
-class Woo_Envios_Health_Check {
-    public static function run(): array {
-        return [
-            'google_maps' => self::check_google_maps(),
-            'weather_api' => self::check_weather_api(),
-            'database' => self::check_cache_table(),
-            'woocommerce' => self::check_woocommerce(),
-            'license' => self::check_license()
-        ];
-    }
-}
-```
-
-### 2. Automated Cleanup
-```php
-// Daily cleanup of old logs
-add_action('woo_envios_daily_cleanup', [Woo_Envios_Logger::class, 'cleanup_old_logs']);
-
-// Cache table maintenance
-add_action('woo_envios_weekly_maintenance', function() {
-    global $wpdb;
-    $table = $wpdb->prefix . 'woo_envios_geocode_cache';
-    $wpdb->query("DELETE FROM $table WHERE expires_at < NOW()");
-});
-```
-
-### 3. Performance Metrics
-- API response times logged
-- Cache hit/miss ratios
-- Circuit breaker activation frequency
-- Shipping calculation success rate
-
-## Troubleshooting Guide
+## Troubleshooting Connectivity Issues
 
 ### Common Issues and Solutions
 
-| Issue | Possible Cause | Solution |
-|-------|---------------|----------|
-| No shipping methods shown | WooCommerce not active | Activate WooCommerce plugin |
-| Google Maps not working | Invalid API key | Regenerate key in Google Cloud Console |
-| Weather pricing not applied | Missing API key | Configure OpenWeather API key |
-| Updates not showing | License validation failed | Check license key in settings |
-| Slow checkout | API timeouts | Increase timeout settings or enable caching |
+1. **Google Maps API Failures**
+   - Verify API key format and permissions
+   - Check billing status for Google Cloud account
+   - Review API usage quotas
+   - Enable required APIs: Geocoding, Places, Distance Matrix
 
-### Debug Mode
-Enable detailed logging via WordPress option:
-```php
-update_option('woo_envios_enable_logs', true);
+2. **Session Coordinate Mismatches**
+   - Clear WooCommerce session data
+   - Verify address normalization logic
+   - Check signature generation algorithm
+
+3. **Update Check Failures**
+   - Verify GitHub repository accessibility
+   - Check license key validity
+   - Review network firewall settings
+
+4. **Performance Degradation**
+   - Monitor cache hit rates
+   - Review API response times
+   - Check database query performance on cache table
+
+### Diagnostic Commands
+
+```bash
+# Check API connectivity
+curl -I "https://maps.googleapis.com/maps/api/geocode/json?address=São+Paulo&key=TEST_KEY"
+
+# Verify plugin file structure
+find . -name "*.php" -type f | xargs grep -l "class Woo_Envios"
+
+# Check database cache table
+wp db query "SELECT COUNT(*) FROM wp_woo_envios_geocode_cache"
+
+# Review error logs
+tail -f /wp-content/uploads/woo-envios-logs/*.log
 ```
 
-Logs will be available at: `/wp-content/uploads/woo-envios-logs/YYYY-MM-DD.log`
+## Compliance and Best Practices
 
-## Compliance and Standards
+### 1. GDPR Compliance
+- User coordinates stored only during active session
+- No permanent storage of personal geolocation data
+- Clear data retention policies for cache tables
+- Privacy policy disclosures for location services
 
-### 1. WordPress Coding Standards
-- Follows WordPress PHP coding standards
-- Proper use of hooks and filters
-- Internationalization ready (text domain: `woo-envios`)
+### 2. PCI Compliance
+- No credit card data handled by plugin
+- All external API calls use HTTPS
+- Secure transmission of license keys
+- Regular security audits of integration points
 
-### 2. WooCommerce Integration Standards
-- Proper shipping method implementation
-- Session handling compatible with WC
-- Filter usage for extensibility
+### 3. Performance Best Practices
+- Implement connection pooling for API calls
+- Use persistent caching strategies
+- Implement request batching where possible
+- Monitor and optimize database queries
 
-### 3. API Integration Best Practices
-- Exponential backoff for retries
-- Circuit breaker pattern
-- Comprehensive error handling
--
+## Version Compatibility Matrix
+
+| Plugin Version | WooCommerce | WordPress | PHP | Google Maps API |
+|----------------|-------------|-----------|-----|-----------------|
+| 1.2.15         | 5.0+        | 6.2+      | 7.4+| v3             |
+| 1.2.0-1.2.14   | 4.0+        | 5.8+      | 7.2+| v3             |
+| 1.0.0-1.1.9    | 3.0+        | 5.0+      | 7.0+| v3             |
+
+## Future Integration Roadmap
+
+### Planned Enhancements
+
+1. **Additional Shipping Providers**
+   -
