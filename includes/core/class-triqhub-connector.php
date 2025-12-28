@@ -289,9 +289,11 @@ if (!class_exists('TriqHub_Connector')) {
                             </div>
 
                             <h3 style="margin: 0 0 5px 0; font-size: 16px; font-weight: 600; color: #111827;">
-                                <?php echo $def['name']; ?></h3>
+                                <?php echo $def['name']; ?>
+                            </h3>
                             <p style="margin: 0 0 20px 0; color: #6b7280; font-size: 13px; line-height: 1.5; min-height: 40px;">
-                                <?php echo $def['description']; ?></p>
+                                <?php echo $def['description']; ?>
+                            </p>
 
                             <div
                                 style="display: flex; align-items: center; justify-content: space-between; border-top: 1px solid #f3f4f6; padding-top: 15px; margin-top: auto;">
@@ -500,10 +502,17 @@ if (!class_exists('TriqHub_Connector')) {
          */
         public function activation_notice()
         {
-            // Activation Notice (Global)
+            // Activation Notice (Global) - Prevent Duplicates
+            static $notice_shown = false;
+            if ($notice_shown) {
+                return;
+            }
+
             if ($this->is_activated()) {
                 return;
             }
+
+            $notice_shown = true;
 
             // Only show if page is not one of ours to avoid clutter
             $screen = get_current_screen();
@@ -534,7 +543,8 @@ if (!class_exists('TriqHub_Connector')) {
                     style="background: white; padding: 30px 40px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; border-radius: 12px 12px 0 0; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
                     <div>
                         <h1 style="margin: 0; font-size: 28px; font-weight: 700; color: #0f172a; letter-spacing: -0.025em;">
-                            <?php echo esc_html($title); ?></h1>
+                            <?php echo esc_html($title); ?>
+                        </h1>
                         <?php if ($description): ?>
                             <p style="margin: 5px 0 0 0; color: #64748b; font-size: 14px;"><?php echo esc_html($description); ?></p>
                         <?php endif; ?>
