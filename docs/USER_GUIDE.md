@@ -1,29 +1,27 @@
 # TriqHub: Shipping & Radius - User Guide
 
 ## Table of Contents
-1. [Overview](#overview)
+1. [Introduction](#introduction)
 2. [System Requirements](#system-requirements)
-3. [Installation & Setup](#installation--setup)
-4. [Configuration Guide](#configuration-guide)
-5. [Shipping Methods](#shipping-methods)
-6. [Dynamic Pricing](#dynamic-pricing)
-7. [Troubleshooting](#troubleshooting)
-8. [Advanced Features](#advanced-features)
-9. [Maintenance](#maintenance)
-10. [FAQs](#faqs)
+3. [Installation & Activation](#installation--activation)
+4. [Initial Configuration](#initial-configuration)
+5. [Shipping Configuration](#shipping-configuration)
+6. [Google Maps Integration](#google-maps-integration)
+7. [Dynamic Pricing Features](#dynamic-pricing-features)
+8. [Troubleshooting](#troubleshooting)
+9. [Advanced Usage Scenarios](#advanced-usage-scenarios)
+10. [Maintenance & Updates](#maintenance--updates)
 
-## Overview
+## Introduction
 
-TriqHub: Shipping & Radius is a sophisticated WooCommerce shipping plugin that automates Brazilian postal code (CEP) coordinate collection at checkout and integrates radius-based shipping rules. The plugin leverages Google Maps API for maximum precision and offers dynamic pricing based on weather conditions, peak hours, and distance tiers.
+TriqHub: Shipping & Radius is a sophisticated WooCommerce shipping plugin designed for Brazilian e-commerce businesses. The plugin automates coordinate collection during checkout using Brazilian postal codes (CEP) and integrates radius-based shipping rules with Google Maps API for maximum precision. Key features include:
 
-### Key Features
-- **Radius-Based Shipping**: Calculate local delivery costs based on straight-line distance from your store
-- **Google Maps Integration**: Precise geocoding and distance calculations using real route data
-- **Dynamic Pricing**: Adjust shipping costs based on weather, time of day, and weekends
-- **Multiple Shipping Methods**: Flash Delivery (local) + Correios/SuperFrete (national)
-- **Automatic Updates**: GitHub-based update system with license key integration
-- **Comprehensive Logging**: Detailed debugging and error tracking
-- **Self-Healing Architecture**: Automatic cache table creation and fallback mechanisms
+- **Radius-Based Local Delivery**: Calculate shipping costs based on straight-line distance from your store
+- **Google Maps Integration**: Accurate geocoding and distance calculations
+- **Dynamic Pricing**: Adjust prices based on weather, peak hours, and weekends
+- **SuperFrete Integration**: Fallback shipping options for customers outside delivery radius
+- **Real-time Weather Integration**: Adjust pricing based on rain conditions
+- **Circuit Breaker Protection**: Automatic fallback when APIs fail
 
 ## System Requirements
 
@@ -33,434 +31,459 @@ TriqHub: Shipping & Radius is a sophisticated WooCommerce shipping plugin that a
 - **PHP**: 7.4 or higher
 - **MySQL**: 5.6 or higher
 - **Memory Limit**: 128MB minimum (256MB recommended)
-- **cURL**: Enabled for API communications
+- **Execution Time**: 30 seconds minimum
 
-### Recommended Requirements
+### Recommended Configuration
 - **PHP**: 8.0 or higher
-- **Memory Limit**: 256MB or higher
-- **Max Execution Time**: 30 seconds
-- **SSL Certificate**: Required for secure API communications
+- **Memory Limit**: 256MB
+- **Max Execution Time**: 60 seconds
+- **cURL Extension**: Enabled
+- **JSON Extension**: Enabled
+- **OpenSSL**: Enabled for secure API connections
 
-### Required APIs
-1. **Google Maps API Key** (Essential for geocoding and distance calculations)
-2. **OpenWeather API Key** (Optional, for weather-based pricing)
-3. **SuperFrete/Correios API** (Optional, for national shipping calculations)
+### API Requirements
+- **Google Maps API Key**: Required for geocoding and distance calculations
+- **OpenWeather API Key**: Optional for weather-based pricing
+- **SuperFrete Account**: Optional for national shipping integration
 
-## Installation & Setup
+## Installation & Activation
 
-### Step 1: Plugin Installation
-
-#### Method A: WordPress Admin Dashboard
+### Method 1: WordPress Admin Dashboard
 1. Navigate to **Plugins → Add New**
 2. Click **Upload Plugin**
 3. Select the `triqhub-shipping-radius.zip` file
 4. Click **Install Now**
-5. After installation, click **Activate**
+5. After installation, click **Activate Plugin**
 
-#### Method B: Manual Installation via FTP
+### Method 2: Manual Installation via FTP
 1. Download the plugin ZIP file
 2. Extract the contents to your computer
 3. Connect to your WordPress site via FTP/SFTP
-4. Upload the `triqhub-shipping-radius` folder to `/wp-content/plugins/`
-5. Navigate to **Plugins** in WordPress admin
-6. Find "TriqHub: Shipping & Radius" and click **Activate**
+4. Navigate to `/wp-content/plugins/`
+5. Upload the `triqhub-shipping-radius` folder
+6. Go to **Plugins → Installed Plugins**
+7. Find "TriqHub: Shipping & Radius" and click **Activate**
 
-### Step 2: Initial Configuration
+### Post-Installation Verification
+After activation, verify the plugin is working correctly:
 
-After activation, follow these steps:
+1. Check for any error messages in the WordPress admin area
+2. Navigate to **WooCommerce → Settings → Shipping**
+3. Verify that "Woo Envios — Raio Escalonado" appears in available shipping methods
+4. Check the plugin status in **WooCommerce → Status → Logs** for any initialization errors
 
-1. **Verify WooCommerce Compatibility**
-   - Ensure WooCommerce 5.0+ is installed and activated
-   - The plugin will display an admin notice if WooCommerce is missing
+## Initial Configuration
 
-2. **Configure Store Location**
-   - Navigate to **WooCommerce → Settings → Shipping → Woo Envios**
-   - Enter your store's base coordinates (latitude/longitude)
-   - Alternatively, use the Google Maps interface to pinpoint your location
+### Step 1: Plugin Settings Access
+Navigate to **WooCommerce → Woo Envios** to access the main configuration panel.
 
-3. **Set Up Shipping Zones**
-   - Go to **WooCommerce → Settings → Shipping → Shipping Zones**
-   - Create a new zone or edit an existing one
-   - Add "Woo Envios — Raio Escalonado" as a shipping method
+### Step 2: Store Coordinates Setup
+1. **Store Address**: Enter your complete business address
+2. **Manual Coordinates** (optional):
+   - Latitude: `-18.911` (default Uberlândia)
+   - Longitude: `-48.262` (default Uberlândia)
+3. Click **Save Coordinates** to geocode your address
 
-### Step 3: API Configuration
+### Step 3: Shipping Zones Configuration
+1. Go to **WooCommerce → Settings → Shipping → Shipping Zones**
+2. Create a new zone or edit an existing one
+3. Add shipping method: **Woo Envios — Raio Escalonado**
+4. Configure zone restrictions based on regions or postal codes
 
-#### Google Maps API Setup
+### Step 4: Distance Tiers Configuration
+Configure your delivery radius tiers in **WooCommerce → Woo Envios → Distance Tiers**:
+
+| Tier Name | Max Distance (km) | Price (R$) | Description |
+|-----------|-------------------|------------|-------------|
+| Tier 1 | 5 | 10.00 | Immediate neighborhood |
+| Tier 2 | 10 | 15.00 | Nearby districts |
+| Tier 3 | 20 | 25.00 | City outskirts |
+| Tier 4 | 30 | 35.00 | Metropolitan area |
+
+**Configuration Tips:**
+- Start with 3-4 tiers for simplicity
+- Consider traffic patterns and delivery times
+- Test distances using Google Maps driving directions
+- Adjust prices based on fuel costs and delivery time
+
+## Shipping Configuration
+
+### Local Delivery (Flash Delivery)
+The plugin's primary shipping method calculates costs based on straight-line distance from your store:
+
+```mermaid
+graph TD
+    A[Customer Enters CEP] --> B[Geocode Address<br/>to Coordinates]
+    B --> C{Coordinates Found?}
+    C -->|Yes| D[Calculate Distance<br/>from Store]
+    C -->|No| E[Fallback to Correios]
+    D --> F{Within Delivery Radius?}
+    F -->|Yes| G[Match Distance Tier]
+    F -->|No| H[Show Only Correios Options]
+    G --> I[Apply Dynamic Pricing]
+    I --> J[Display Flash Delivery Option]
+    H --> K[Display Correios Options Only]
+    J --> L[Customer Selects Shipping]
+    K --> L
+```
+
+### SuperFrete Integration
+For customers outside your delivery radius, the plugin automatically provides SuperFrete shipping options:
+
+1. **Enable SuperFrete**: Go to **WooCommerce → Woo Envios → SuperFrete Settings**
+2. **Configure Services**: Select which services to offer (PAC, SEDEX, Mini)
+3. **Set Defaults**: Configure fallback behavior when local delivery isn't available
+4. **Test Integration**: Place test orders to different regions to verify calculations
+
+### Shipping Method Priority
+The plugin automatically sorts shipping methods to display Flash Delivery first:
+
+1. **Flash Delivery** (woo_envios_radius) - Top priority
+2. **SuperFrete Options** - Secondary options
+3. **Other WooCommerce Methods** - Fallback options
+
+## Google Maps Integration
+
+### API Key Configuration
 1. **Obtain API Key**:
-   - Visit [Google Cloud Console](https://console.cloud.google.com/)
+   - Go to [Google Cloud Console](https://console.cloud.google.com/)
    - Create a new project or select existing
-   - Enable the following APIs:
-     - Maps JavaScript API
-     - Geocoding API
-     - Distance Matrix API
-     - Places API
+   - Enable: Geocoding API, Places API, Distance Matrix API
    - Create credentials → API Key
-   - Restrict the API key to your domain
+   - Restrict key to your domain
 
 2. **Configure in Plugin**:
    - Navigate to **WooCommerce → Woo Envios → Google Maps**
-   - Paste your Google Maps API key
-   - Click **Save Changes**
+   - Enter your API Key
+   - Click **Validate Key** to test connectivity
+   - Save settings
 
-#### OpenWeather API (Optional)
-1. **Obtain API Key**:
-   - Register at [OpenWeather](https://openweathermap.org/api)
-   - Subscribe to the "Current Weather Data" API (free tier available)
-   - Copy your API key
+### Geocoding Cache
+The plugin caches geocoding results to improve performance:
 
-2. **Configure in Plugin**:
-   - Navigate to **WooCommerce → Woo Envios → Dynamic Pricing**
-   - Enter your OpenWeather API key
-   - Configure rain multipliers as needed
+- **Cache Duration**: 30 days (configurable)
+- **Cache Table**: `wp_woo_envios_geocode_cache`
+- **Manual Cache Clear**: Available in admin settings
+- **Automatic Cleanup**: Expired entries removed automatically
 
-## Configuration Guide
+### Address Validation
+Enable address validation for accurate deliveries:
 
-### Store Settings
+1. **Enable Places Autocomplete**: In Google Maps settings
+2. **Configure Fields**: Map address fields to WooCommerce checkout
+3. **Validation Rules**: Set minimum address completeness requirements
+4. **Error Messages**: Customize validation failure messages
 
-#### Base Coordinates
-```php
-// Default coordinates (Uberlândia, Brazil)
-define('WOO_ENVIOS_DEFAULT_LAT', -18.911);
-define('WOO_ENVIOS_DEFAULT_LNG', -48.262);
-```
+### Distance Calculation Methods
+The plugin uses multiple methods for distance calculation:
 
-**To Configure**:
-1. Navigate to **WooCommerce → Woo Envios → General Settings**
-2. Enter your store's latitude and longitude
-3. Use the "Pick on Map" button for visual selection
-4. Click **Save Coordinates**
+1. **Primary**: Google Distance Matrix API (driving distance)
+2. **Fallback**: Haversine formula (straight-line distance)
+3. **Configuration**: Choose preferred method in settings
 
-#### Distance Tiers Configuration
+## Dynamic Pricing Features
 
-Configure delivery radius tiers with corresponding prices:
+### Weather-Based Pricing
+Integrate with OpenWeather API to adjust prices during rain:
 
-1. Navigate to **WooCommerce → Woo Envios → Distance Tiers**
-2. Add tiers in ascending order:
-   - **Tier 1**: 0-5 km → R$ 10.00
-   - **Tier 2**: 5-10 km → R$ 15.00
-   - **Tier 3**: 10-15 km → R$ 20.00
-   - **Tier 4**: 15-20 km → R$ 25.00
+1. **Get API Key**: Register at [OpenWeatherMap](https://openweathermap.org/api)
+2. **Configure in Plugin**: Woo Envios → Weather Settings
+3. **Set Multipliers**:
+   - Light Rain: 1.2x (20% increase)
+   - Heavy Rain: 1.5x (50% increase)
+   - Thunderstorm: 1.5x (50% increase)
 
-**Important**: The plugin will only show Flash Delivery for addresses within configured tiers. Addresses outside all tiers will only see Correios/SuperFrete options.
+4. **Weather Conditions**:
+   ```php
+   // Example weather detection logic
+   if ($rain_1h > 5) {
+       // Heavy rain (>5mm/hour)
+       $multiplier = 1.5;
+   } elseif ($condition === 'rain') {
+       // Light to moderate rain
+       $multiplier = 1.2;
+   } else {
+       // No rain
+       $multiplier = 1.0;
+   }
+   ```
 
-### Shipping Method Configuration
+### Peak Hour Pricing
+Configure price increases during busy periods:
 
-#### Flash Delivery (Local Radius Shipping)
+1. **Define Peak Periods**:
+   ```json
+   [
+     {
+       "name": "Lunch Rush",
+       "start": "11:30",
+       "end": "13:30",
+       "multiplier": 1.3
+     },
+     {
+       "name": "Evening Rush",
+       "start": "17:00",
+       "end": "19:00",
+       "multiplier": 1.4
+     }
+   ]
+   ```
 
-**Settings Location**: WooCommerce → Settings → Shipping → [Zone Name] → Woo Envios — Raio Escalonado
+2. **Configuration Interface**:
+   - Add/remove peak periods
+   - Set custom multipliers per period
+   - Enable/disable feature globally
 
-| Setting | Description | Default Value |
-|---------|-------------|---------------|
-| **Enabled** | Enable/disable the shipping method | Yes |
-| **Title** | Display name shown to customers | "Entrega Flash" |
-| **Tax Status** | Whether shipping cost is taxable | Taxable |
-| **Cost** | Base cost (overridden by distance tiers) | 0 |
+### Weekend Pricing
+Adjust prices for weekend deliveries:
 
-#### Correios/SuperFrete Configuration
+1. **Enable Feature**: Woo Envios → Dynamic Pricing
+2. **Set Multiplier**: Default 1.0 (no increase)
+3. **Custom Weekends**: Define Saturday/Sunday separately
+4. **Holiday Handling**: Option to treat holidays as weekends
 
-1. Navigate to **WooCommerce → Woo Envios → Correios Settings**
-2. Enable/disable Correios integration
-3. Configure API credentials (if using SuperFrete)
-4. Set default package dimensions and weights
-5. Select available services (PAC, SEDEX, Mini)
+### Maximum Multiplier Limit
+Protect against excessive price increases:
 
-### Dynamic Pricing Configuration
-
-#### Peak Hours Configuration
-
-Configure time-based pricing multipliers:
-
-1. Navigate to **WooCommerce → Woo Envios → Dynamic Pricing → Peak Hours**
-2. Add peak periods:
-   - **Name**: Lunch Rush
-   - **Start Time**: 11:30
-   - **End Time**: 13:30
-   - **Multiplier**: 1.2 (20% increase)
-3. Multiple periods can be configured for different times of day
-
-#### Weather-Based Pricing
-
-Configure rain-based pricing adjustments:
-
-1. Navigate to **WooCommerce → Woo Envios → Dynamic Pricing → Weather**
-2. **Light Rain Multiplier**: 1.2 (20% increase for drizzle/light rain)
-3. **Heavy Rain Multiplier**: 1.5 (50% increase for heavy rain/thunderstorms)
-4. **OpenWeather API Key**: Required for weather data
-
-#### Weekend Pricing
-
-Configure weekend surcharges:
-
-1. Navigate to **WooCommerce → Woo Envios → Dynamic Pricing → Weekend**
-2. **Weekend Multiplier**: 1.3 (30% increase on Saturdays and Sundays)
-3. **Apply to**: Both Saturday and Sunday
-
-#### Maximum Multiplier Limit
-
-Set a cap on total dynamic pricing increases:
-
-1. Navigate to **WooCommerce → Woo Envios → Dynamic Pricing → Limits**
-2. **Maximum Total Multiplier**: 2.0 (100% maximum increase)
-3. This prevents excessive pricing during multiple adverse conditions
-
-### Cache Configuration
-
-#### Geocode Cache Settings
-
-The plugin caches Google Maps API responses to improve performance:
-
-1. Navigate to **WooCommerce → Woo Envios → Advanced → Cache**
-2. **Cache Duration**: 30 days (default)
-3. **Clear Cache**: Button to manually clear all cached geocode data
-4. **Auto-cleanup**: Enabled by default (removes expired cache entries)
-
-#### Session Cache Settings
-
-Customer coordinates are cached in WooCommerce session:
-
-1. **Session Signature**: Based on normalized address components
-2. **Cache Invalidation**: Automatically invalidates when address changes
-3. **Fallback Mechanism**: Server-side geocoding if session data is missing
-
-## Shipping Methods
-
-### Flash Delivery (Local Radius Shipping)
-
-#### How It Works
-1. **Address Collection**: Customer enters Brazilian CEP at checkout
-2. **Geocoding**: Plugin converts CEP to coordinates using Google Maps
-3. **Distance Calculation**: Calculates straight-line distance from store
-4. **Tier Matching**: Finds appropriate price tier based on distance
-5. **Dynamic Pricing**: Applies weather, time, and weekend multipliers
-6. **Rate Display**: Shows Flash Delivery option if within configured radius
-
-#### Display Logic
-```mermaid
-flowchart TD
-    A[Customer Enters CEP] --> B{CEP Valid?}
-    B -->|No| C[Show Error Message]
-    B -->|Yes| D[Geocode Address]
-    D --> E{Coordinates Found?}
-    E -->|No| F[Fallback to Correios Only]
-    E -->|Yes| G[Calculate Distance]
-    G --> H{Distance within Tiers?}
-    H -->|No| I[Show Correios Only]
-    H -->|Yes| J[Apply Dynamic Pricing]
-    J --> K[Display Flash Delivery + Correios]
-```
-
-### Correios/SuperFrete Integration
-
-#### Supported Services
-- **PAC**: Economical service with longer delivery times
-- **SEDEX**: Priority express delivery
-- **Mini**: Small package service for lightweight items
-
-#### Configuration Steps
-1. **Enable Integration**: Woo Envios → Correios Settings → Enable
-2. **API Setup**: Enter SuperFrete API credentials (if using)
-3. **Service Selection**: Choose which services to offer
-4. **Package Defaults**: Set default dimensions and weights
-5. **Testing**: Use test mode to verify calculations
-
-#### Fallback Behavior
-When Flash Delivery cannot be calculated (outside radius or geocoding failure), the plugin automatically shows Correios options as a fallback.
-
-## Dynamic Pricing
-
-### Multiplier Calculation
-
-The plugin applies multipliers in this order:
-
-1. **Base Tier Price**: Determined by distance from store
-2. **Peak Hour Multiplier**: Applied during configured peak periods
-3. **Weekend Multiplier**: Applied on Saturdays and Sundays
-4. **Weather Multiplier**: Applied based on current rain conditions
-5. **Maximum Cap**: Total multiplier cannot exceed configured maximum
-
-### Example Calculation
-
-**Scenario**: 
-- Distance: 8 km (Tier price: R$ 15.00)
-- Time: 12:00 PM (Peak hour multiplier: 1.2)
-- Day: Saturday (Weekend multiplier: 1.3)
-- Weather: Light rain (Weather multiplier: 1.2)
-- Max multiplier: 2.0
-
-**Calculation**:
-```
-Base: R$ 15.00
-× Peak: 1.2 = R$ 18.00
-× Weekend: 1.3 = R$ 23.40
-× Weather: 1.2 = R$ 28.08
-Check max: 1.2 × 1.3 × 1.2 = 1.872 (under 2.0)
-Final Price: R$ 28.08
-```
-
-### Real-time Adjustments
-
-#### Weather Detection
-The plugin checks OpenWeather API every hour (cached) to determine:
-- **No Rain**: Multiplier = 1.0
-- **Light Rain/Drizzle**: Multiplier = 1.2 (configurable)
-- **Heavy Rain/Thunderstorm**: Multiplier = 1.5 (configurable)
-
-#### Peak Hour Detection
-Based on server time (configured in WordPress settings):
-- **Automatic Detection**: Compares current time with configured periods
-- **Multiple Periods**: Supports multiple peak periods per day
-- **Timezone Aware**: Uses WordPress timezone settings
+- **Default Limit**: 2.0x (100% increase)
+- **Configurable**: Set in dynamic pricing settings
+- **Calculation**: `final_price = min(base_price * multipliers, base_price * max_multiplier)`
 
 ## Troubleshooting
 
 ### Common Issues and Solutions
 
-#### Issue 1: Shipping Methods Not Showing
-
+#### Issue 1: Plugin Not Appearing in Shipping Methods
 **Symptoms**:
-- No shipping options at checkout
-- "No shipping methods available" message
+- No "Woo Envios — Raio Escalonado" in shipping zones
+- Shipping method dropdown empty
+
+**Solutions**:
+1. **Verify WooCommerce Version**: Ensure WooCommerce 5.0+ is installed
+2. **Check Plugin Activation**: Confirm plugin is active in Plugins list
+3. **Clear Caches**:
+   ```bash
+   # Clear WordPress transients
+   wp transient delete --all
+   
+   # Clear WooCommerce shipping cache
+   wp wc shipping_zone list
+   ```
+4. **Check PHP Error Log**: Look for class loading errors
+
+#### Issue 2: Google Maps API Errors
+**Symptoms**:
+- "Invalid API key" messages
+- Addresses not geocoding
+- Distance calculations failing
+
+**Solutions**:
+1. **Verify API Key**:
+   - Check key is valid and not expired
+   - Verify required APIs are enabled
+   - Confirm domain restrictions are correct
+
+2. **Test API Connectivity**:
+   ```bash
+   # Test Geocoding API
+   curl "https://maps.googleapis.com/maps/api/geocode/json?address=São+Paulo&key=YOUR_API_KEY"
+   
+   # Test Distance Matrix API
+   curl "https://maps.googleapis.com/maps/api/distancematrix/json?origins=-23.5505,-46.6333&destinations=-22.9068,-43.1729&key=YOUR_API_KEY"
+   ```
+
+3. **Check API Quotas**:
+   - Monitor usage in Google Cloud Console
+   - Request quota increase if needed
+   - Implement caching to reduce API calls
+
+#### Issue 3: Distance Calculations Incorrect
+**Symptoms**:
+- Shipping prices don't match expected distances
+- Customers outside radius receiving local delivery
 
 **Solutions**:
 1. **Verify Store Coordinates**:
-   - Check Woo Envios → General Settings
-   - Ensure latitude/longitude are set
-   - Use "Test Coordinates" button
+   - Check coordinates in Woo Envios settings
+   - Test with known addresses
+   - Use "Test Coordinates" feature
 
-2. **Check Shipping Zone Configuration**:
-   - Verify zone includes customer's location
-   - Ensure "Woo Envios — Raio Escalonado" is added to zone
-   - Check zone restriction settings
+2. **Check Distance Calculation Method**:
+   - Confirm Google Maps API is working
+   - Test Haversine fallback
+   - Compare both methods for consistency
 
-3. **Enable Debug Logging**:
-   - Navigate to Woo Envios → Advanced → Logging
-   - Enable "Debug Mode"
-   - Check logs at `/wp-content/uploads/woo-envios-logs/`
+3. **Debug Logging**:
+   Enable debug logs in **Woo Envios → Logging Settings**
+   Check log files at `/wp-content/uploads/woo-envios-logs/`
 
-4. **Verify Google Maps API**:
-   - Check API key is valid and not expired
-   - Verify required APIs are enabled
-   - Check API usage limits
-
-#### Issue 2: Incorrect Distance Calculations
-
+#### Issue 4: Dynamic Pricing Not Working
 **Symptoms**:
-- Shipping prices don't match expected distances
-- Customers charged for wrong tier
-
-**Solutions**:
-1. **Clear Geocode Cache**:
-   - Navigate to Woo Envios → Advanced → Cache
-   - Click "Clear All Cache"
-   - Test with fresh address
-
-2. **Verify Address Format**:
-   - Ensure Brazilian CEP format: 00000-000
-   - Check for special characters in address
-   - Test with known valid addresses
-
-3. **Check Distance Matrix API**:
-   - Verify Distance Matrix API is enabled
-   - Check API response in browser console
-   - Test with Google Maps Distance Matrix directly
-
-#### Issue 3: Dynamic Pricing Not Working
-
-**Symptoms**:
-- No price adjustments for peak hours/weekends/weather
+- No price adjustments for weather/peak hours
 - Multipliers not applying correctly
 
 **Solutions**:
-1. **Verify Dynamic Pricing Settings**:
-   - Check Woo Envios → Dynamic Pricing → Enabled
-   - Verify multiplier values are > 1.0
-   - Check peak hour time ranges
+1. **Verify Feature Enablement**:
+   - Check dynamic pricing is enabled
+   - Confirm weather API key is valid
+   - Verify peak hour configurations
 
-2. **Check OpenWeather API**:
-   - Verify API key is valid
-   - Check API response using test endpoint
-   - Ensure "Current Weather" API is subscribed
+2. **Test Weather Integration**:
+   ```php
+   // Manual weather test
+   $weather = new Woo_Envios_Weather();
+   $multiplier = $weather->get_weather_multiplier(-23.5505, -46.6333);
+   echo "Weather multiplier: " . $multiplier;
+   ```
 
-3. **Server Time Configuration**:
-   - Verify WordPress timezone settings
-   - Check server time matches WordPress time
-   - Test with different times of day
-
-#### Issue 4: Plugin Update Failures
-
-**Symptoms**:
-- Update notifications not showing
-- Manual update fails
-- Version mismatch errors
-
-**Solutions**:
-1. **Check GitHub Connection**:
-   - Verify `plugin-update-checker` is installed
-   - Check GitHub repository accessibility
-   - Verify license key (if required)
-
-2. **File Permissions**:
-   - Check `/wp-content/plugins/` write permissions
-   - Verify PHP can create temporary files
-   - Check disk space availability
-
-3. **Manual Update**:
-   - Download latest release from GitHub
-   - Deactivate current plugin
-   - Upload and replace files via FTP
-   - Reactivate plugin
+3. **Check Timezone Settings**:
+   - Confirm WordPress timezone matches your location
+   - Verify peak hour times are in correct timezone
+   - Test with current time display
 
 ### Debug Mode
+Enable comprehensive debugging for complex issues:
 
-#### Enabling Debug Mode
-1. Navigate to **WooCommerce → Woo Envios → Advanced → Logging**
-2. Enable "Debug Mode"
-3. Select log level (Info, Warning, Error)
-4. Click **Save Settings**
+1. **Enable Debug Logging**:
+   ```php
+   // Add to wp-config.php
+   define('WP_DEBUG', true);
+   define('WP_DEBUG_LOG', true);
+   define('WP_DEBUG_DISPLAY', false);
+   ```
 
-#### Log File Location
-- **Path**: `/wp-content/uploads/woo-envios-logs/`
-- **Format**: `YYYY-MM-DD.log`
-- **Retention**: 7 days (auto-cleaned)
+2. **Plugin-Specific Debug**:
+   - Woo Envios → Settings → Enable Debug Mode
+   - Check "Log all API requests"
+   - Enable "Detailed calculation logging"
 
-#### Sample Log Entry
-```
-[2024-01-15 14:30:45] [INFO] FRETE CALCULADO | Distância: 8.5 km | Base: R$ 15.00 | Final: R$ 28.08 | Multiplicadores: Pico +20%, Fim de semana +30%, Chuva +20%
-[2024-01-15 14:30:45] [INFO] Flash delivery rate ADDED: Entrega Flash @ R$28.08
-```
+3. **Review Logs**:
+   - WordPress debug log: `/wp-content/debug.log`
+   - Plugin logs: `/wp-content/uploads/woo-envios-logs/`
+   - WooCommerce logs: **WooCommerce → Status → Logs**
 
-### API Error Handling
+### Circuit Breaker Status
+The plugin includes automatic failure protection:
 
-#### Google Maps API Errors
+1. **Check Circuit Status**:
+   ```sql
+   -- Check failure count
+   SELECT option_value 
+   FROM wp_options 
+   WHERE option_name = 'woo_envios_api_failure_count';
+   
+   -- Check circuit state
+   SELECT option_value 
+   FROM wp_options 
+   WHERE option_name = 'woo_envios_circuit_open';
+   ```
 
-**Common Error Codes**:
-- `REQUEST_DENIED`: Invalid API key or missing permissions
-- `OVER_QUERY_LIMIT`: Daily quota exceeded
-- `ZERO_RESULTS`: Address not found
-- `INVALID_REQUEST`: Missing required parameters
+2. **Reset Circuit Breaker**:
+   - Automatic reset after 5 minutes
+   - Manual reset in admin settings
+   - Clear failure count to restore API functionality
 
-**Automatic Fallback**:
-1. **Circuit Breaker**: After 5 consecutive failures, API calls are disabled for 1 hour
-2. **Default Coordinates**: Uses `WOO_ENVIOS_DEFAULT_LAT/LNG`
-3. **Haversine Fallback**: Uses mathematical distance calculation instead of Distance Matrix
-4. **Admin Notification**: Sends email to site admin
+## Advanced Usage Scenarios
 
-#### OpenWeather API Errors
+### Scenario 1: Multi-Store Configuration
+**Requirement**: Deliver from multiple locations with different radius rules
 
-**Fallback Behavior**:
-- Returns multiplier 1.0 (no adjustment)
-- Logs error for debugging
-- Continues with other dynamic pricing factors
+**Solution**:
+1. **Create Shipping Zones** for each store location
+2. **Configure Store-Specific Settings**:
+   ```php
+   // Custom store coordinates per zone
+   add_filter('woo_envios_store_coordinates', function($coords, $zone_id) {
+       switch($zone_id) {
+           case 1: // Zone 1 - Store A
+               return ['lat' => -23.5505, 'lng' => -46.6333];
+           case 2: // Zone 2 - Store B
+               return ['lat' => -22.9068, 'lng' => -43.1729];
+           default:
+               return $coords;
+       }
+   }, 10, 2);
+   ```
 
-## Advanced Features
+3. **Zone-Specific Tiers**:
+   - Different distance tiers per zone
+   - Custom pricing based on location
+   - Zone-specific dynamic pricing rules
 
-### Custom Hooks and Filters
+### Scenario 2: Subscription-Based Delivery
+**Requirement**: Offer discounted shipping for subscription customers
 
-#### Actions
+**Solution**:
+1. **Integrate with Subscription Plugin**:
+   ```php
+   add_filter('woo_envios_shipping_multiplier', function($multiplier, $customer_id) {
+       if (wcs_user_has_subscription($customer_id)) {
+           // Apply 20% discount for subscribers
+           return $multiplier * 0.8;
+       }
+       return $multiplier;
+   }, 10, 2);
+   ```
 
-| Hook | Description | Parameters |
-|------|-------------|------------|
-| `woo_envios_before_shipping_calculation` | Fires before shipping calculation | `$package` (array) |
-| `woo_envios_after_shipping_calculation` | Fires after shipping calculation | `$rates` (array), `$package` (array) |
-| `woo_envios_geocode_success` | Fires when geocoding succeeds | `$coordinates` (array), `$address` (string) |
-| `woo_envios_geocode_failure` | Fires when geocoding fails | `$error` (string), `$address` (string)
+2. **Subscription-Only Delivery Windows**:
+   - Priority delivery for subscribers
+   - Extended delivery radius
+   - Guaranteed delivery times
+
+### Scenario 3: Real-Time Delivery Tracking
+**Requirement**: Show delivery progress to customers
+
+**Solution**:
+1. **Integrate Delivery Tracking API**:
+   ```php
+   // Add tracking to order meta
+   add_action('woocommerce_order_status_processing', function($order_id) {
+       $order = wc_get_order($order_id);
+       $shipping_method = $order->get_shipping_method();
+       
+       if (strpos($shipping_method, 'woo_envios_radius') !== false) {
+           // Generate tracking code
+           $tracking_code = 'TRQ' . date('Ymd') . $order_id;
+           update_post_meta($order_id, '_woo_envios_tracking', $tracking_code);
+           
+           // Send tracking email
+           $this->send_tracking_email($order, $tracking_code);
+       }
+   });
+   ```
+
+2. **Customer Portal Integration**:
+   - Add tracking section to My Account
+   - Real-time delivery status updates
+   - Estimated delivery time display
+
+### Scenario 4: Bulk Order Discounts
+**Requirement**: Discount shipping for large orders
+
+**Solution**:
+1. **Cart-Based Discount Rules**:
+   ```php
+   add_filter('woo_envios_shipping_cost', function($cost, $cart_total) {
+       if ($cart_total > 500) {
+           // Free shipping for orders over R$500
+           return 0;
+       } elseif ($cart_total > 200) {
+           // 50% discount for orders over R$200
+           return $cost * 0.5;
+       }
+       return $cost;
+   }, 10, 2);
+   ```
+
+2. **Product-Based Rules**:
+   - Free shipping for specific products
+   - Category-based shipping rules
+   - Weight-based pricing adjustments
+
+### Scenario 5: Scheduled Deliveries
+**Requirement**: Allow customers to choose delivery time slots
+
+**Solution**:
+1. **Time Slot Integration**:
+   ```php
+   // Add time slot selector to checkout
